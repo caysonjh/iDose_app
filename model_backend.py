@@ -565,15 +565,21 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
     return pdf_file, web_info
 
 
-def calculate_min_distance(npi_zip_df, progress_updater=None, idx=1, idose_val_column=IDOS_VAL_COLUMN):      
-    zips = npi_zip_df['ZIP']
-    idose_zips = npi_zip_df[npi_zip_df[idose_val_column] == True]['ZIP']
+def calculate_min_distance(npi_zip_df, idose_zips, progress_updater=None, idx=1):      
+    zips = npi_zip_df.to_list()
+    
     
     nomi = pgeocode.Nominatim('us')
     min_dists = []
     
     zip_coords = {}
     for zipcode in tqdm(zips, desc='Precomputing Zips'): 
+        res = nomi.query_postal_code(zipcode)
+        if res is not None and not np.isnan(res.latitude): 
+            zip_coords[zipcode] = (res.latitude, res.longitude)
+    for zipcode in idose_zips: 
+        if zipcode in zip_coords.keys():
+            continue
         res = nomi.query_postal_code(zipcode)
         if res is not None and not np.isnan(res.latitude): 
             zip_coords[zipcode] = (res.latitude, res.longitude)
@@ -608,7 +614,7 @@ def calculate_min_distance(npi_zip_df, progress_updater=None, idx=1, idose_val_c
 
 
 
-def format_cms_data(df, start_year, end_year):
+def format_cms_data(df, start_year, end_year, idose_zips):
     #print(df[['DRUG_Combigan+Brimonidine Tartrate/Timolol_Total_Services', 'DRUG_Dorzolamide-Timolol+Dorzolamide Hcl/Timolol Maleat_Total_Services']])
     df = df.set_index('NPI') 
     other_cols = []
@@ -660,7 +666,7 @@ def format_cms_data(df, start_year, end_year):
     val_df = pd.DataFrame(new_cols, index=df.index)
     final_df = pd.merge(val_df, df[other_cols], left_index=True, right_index=True)
     
-    min_dist_df = calculate_min_distance(final_df[['ZIP','is_idose']])
+    min_dist_df = calculate_min_distance(final_df['ZIP'], idose_zips)
     final_df = pd.merge(final_df, min_dist_df, left_index=True, right_index=True).drop(['State','ZIP'], axis=1)
     
     now = datetime.now() 
@@ -682,23 +688,20 @@ def format_cms_data(df, start_year, end_year):
     return final_df[~final_df.index.duplicated()]
 
 
-def format_uploaded_data(df, start_year, end_year, idose_val_col, progress_updater=None): 
+def format_uploaded_data(df, start_year, end_year, idose_zips, progress_updater=None): 
         
     new_cols = {}
     df = df.set_index('NPI').drop('Name', axis=1).replace('<11', 5).astype(int)
     df.columns = df.columns.str.replace(' Patients','', regex=False)
     df.columns = df.columns.str.replace(' Claims','', regex=False)
     
-    y = df[idose_val_col] > 0
-    df = df.drop(idose_val_col, axis=1)
-    
     idx = 1
     if progress_updater: 
         progress_updater(idx, f'Combining columns based on feature codes...')
         idx+=1
     
-    for key, value in CMS_CONVERSIONS.items():
-        df.columns = df.columns.str.replace(key, value, regex=False)
+    # for key, value in CMS_CONVERSIONS.items():
+    #     df.columns = df.columns.str.replace(key, value, regex=False)
         
     for header, cols in new_feats.items(): 
         new_cols[header] = (df[cols].sum(axis=1))
@@ -709,7 +712,6 @@ def format_uploaded_data(df, start_year, end_year, idose_val_col, progress_updat
                 new_cols[f'{header} In {year}'] = df[year_cols].sum(axis=1)
         
     new_df = pd.DataFrame(new_cols)
-    new_df[idose_val_col] = y
     new_df.index = df.index
         
     final_df = new_df.loc[:, ~new_df.columns.str.contains(' 20')].astype(float)
@@ -725,8 +727,7 @@ def format_uploaded_data(df, start_year, end_year, idose_val_col, progress_updat
     state_to_mac = pd.read_csv('state_to_mac.csv').set_index('State')['MAC'].to_dict()
     final_df['MAC'] = [state_to_mac[state] for state in final_df['State']]
     
-    
-    min_dist_df = calculate_min_distance(final_df[['ZIP',idose_val_col]], progress_updater, idx, idose_val_col)
+    min_dist_df = calculate_min_distance(final_df['ZIP'], idose_zips, progress_updater, idx)
     final_df = pd.merge(final_df, min_dist_df, left_index=True, right_index=True).drop(['State','ZIP'], axis=1)
     idx += len(final_df)
 
@@ -794,8 +795,10 @@ def get_code_data_from_cms(npi_list, cpt_codes, start_year=MOST_UP_TO_DATE_CMS_Y
                 continue
             npi_df = pd.DataFrame(json_data)[['Rndrng_NPI','HCPCS_Cd','Tot_Srvcs','Tot_Benes','Rndrng_Prvdr_State_Abrvtn','Rndrng_Prvdr_Zip5']].rename(columns={'Rndrng_NPI':'NPI','Rndrng_Prvdr_State_Abrvtn':'State','Rndrng_Prvdr_Zip5':'ZIP'})
             out_df = npi_df[npi_df['HCPCS_Cd'].isin(cpt_codes)]
-            out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].astype(int)
-            out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].astype(int)
+            out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].fillna(0)
+            out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].fillna(0)
+            out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].round().astype(int)
+            out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].round().astype(int)
             
             out_df = out_df.groupby(['NPI','HCPCS_Cd','State','ZIP']).agg(
                 Total_Services=pd.NamedAgg(column='Tot_Srvcs', aggfunc='sum'),
@@ -1033,11 +1036,13 @@ def get_nppes_info(npi_list, progress_callback=None, start_idx=0):
 
 # print(format_cms_data(all_data, '2023', MOST_UP_TO_DATE_CMS_YEAR)['GONIOTOMY_Services_TOTAL'])
 
+from miscellaneous import set_cancel_button, set_norm_button
 
-def run_model_mac_split(X, y, balance_class, progress_report, model_name): 
+def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_settings): 
     progress_callback, model_cleaner = progress_report
     
-    if st.button('Cancel', key='split_cancel'):
+    set_cancel_button()
+    if st.button('Cancel', key='split_cancel', width='stretch', icon=':material/cancel:'):
         st.stop()
     
     y = y > 0
@@ -1073,7 +1078,18 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name):
         full_clf = clf 
         full_clf.fit(df, y_mac)
         clf_file_name = f'{model_name}_{mac}.pkl'
-        joblib.dump(full_clf, clf_file_name)
+        if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
+            num_extra = 1
+            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                if f'{clf_file_name}_overwritten' in clf_name: 
+                    num_extra += 1
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+        
+        to_save = {
+            'model':full_clf,
+            'feat_settings':feat_settings
+        }
+        joblib.dump(to_save, clf_file_name)
         mac_clfs.append((mac, clf_file_name))
         
         if progress_callback: 
@@ -1089,15 +1105,18 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name):
     
     with st.spinner('Generating reports and analyses...'):
         pdf_file, web_info = generate_model_report(mac_values, features, top_n_features=20, balance_class=balance_class) 
+        
+    set_norm_button()
     
     return mac_clfs, pdf_file, web_info
 
 
-def run_model_all_macs(X, y, balance_class, model_name): 
+def run_model_all_macs(X, y, balance_class, model_name, feat_settings): 
     with st.spinner('Running model with this dataset...'):
         st.dataframe(X)
         
-        if st.button('Cancel', key='mac_cancel'):
+        set_cancel_button()
+        if st.button('Cancel', key='mac_cancel', width='stretch', icon=':material/cancel:'):
             st.stop()
         
         y = y > 0
@@ -1127,7 +1146,18 @@ def run_model_all_macs(X, y, balance_class, model_name):
         full_clf = clf 
         full_clf.fit(X, y)
         clf_file_name = f'{model_name}_ALL_MACS.pkl'
-        joblib.dump(full_clf, clf_file_name)
+        if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
+            num_extra = 1
+            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                if f'{clf_file_name}_overwritten' in clf_name: 
+                    num_extra += 1
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+            
+        to_save = {
+            'model':full_clf,
+            'feat_settings':feat_settings
+        }
+        joblib.dump(to_save, clf_file_name)
         
         features = X.columns.tolist()
         features = [feature.replace(' Proportion', '') for feature in features]
@@ -1137,11 +1167,13 @@ def run_model_all_macs(X, y, balance_class, model_name):
     
     with st.spinner('Generating reports and analyses...'):
         pdf_file, web_info = generate_model_report(mac_values, features, top_n_features=20, balance_class=balance_class)
+      
+    set_norm_button()
             
     return clf_file_name, pdf_file, web_info
 
 
-def train_model(X, y, balance_class, model_name, mac): 
+def train_model(X, y, balance_class, model_name, mac, feat_settings): 
     with st.spinner('Training Model...'): 
         y = y > 0 
         
@@ -1155,6 +1187,17 @@ def train_model(X, y, balance_class, model_name, mac):
         clf.fit(X, y)
         
         clf_file_name = f'{model_name}_{mac}.pkl'
-        joblib.dump(clf, clf_file_name)
+        if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
+            num_extra = 1
+            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                if f'{clf_file_name}_overwritten' in clf_name: 
+                    num_extra += 1
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+        
+        to_save = {
+            'model':clf,
+            'feat_settings':feat_settings
+        }
+        joblib.dump(to_save, clf_file_name)
         
         return clf_file_name

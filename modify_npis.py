@@ -1,7 +1,27 @@
 import streamlit as st 
 import os 
-from load_data import IDOSE_FILE, NON_IDOSE_FILE, parse_npi_list
- 
+from load_data import IDOSE_FILE, NON_IDOSE_FILE
+import streamlit_antd_components as sac
+from storage_interaction import write_user_environment
+
+def parse_npi_list(text): 
+    return set(x.strip() for x in text.strip().splitlines() if x.strip())
+    
+
+def update_idose_npis(new_idose_contents): 
+    with open(IDOSE_FILE, 'w') as f: 
+        f.write(new_idose_contents)
+        
+    st.session_state['idose_npis'] = new_idose_contents
+    write_user_environment()
+        
+def update_non_idose_npis(new_non_idose_contents):
+    with open(NON_IDOSE_FILE, 'w') as f: 
+        f.write(new_non_idose_contents)    
+        
+    st.session_state['non_idose_npis'] = new_non_idose_contents
+    write_user_environment()
+
     
 def modify_npi_info():
     st.header('Edit included NPIs for iDose and non-iDose users')
@@ -33,7 +53,7 @@ def modify_npi_info():
         st.subheader('Edit Non-iDose Users')
         new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
     
-    if st.button('Save Lists'): 
+    if st.button('Save Lists', icon=':material/patient_list:', width='stretch'): 
         new_idose_contents = st.session_state.idose_text
         new_non_idose_contents = st.session_state.non_idose_text
         
@@ -54,11 +74,11 @@ def modify_npi_info():
         if overlap:
             st.error(f"Conflict: NPIs {', '.join(overlap)} appear in both lists")
         else: 
-            with open(IDOSE_FILE, 'w') as f: 
-                f.write(new_idose_contents)
-            with open(NON_IDOSE_FILE, 'w') as f: 
-                f.write(new_non_idose_contents)
+            update_idose_npis(new_idose_contents)
+            update_non_idose_npis(new_non_idose_contents)
             st.success('NPIs updated successfully')
             
             st.session_state.idose_contents = new_idose_contents
             st.session_state.non_idose_contents = new_non_idose_contents
+            
+    sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='npis_end')

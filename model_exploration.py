@@ -8,6 +8,13 @@ import numpy as np
 from miscellaneous import make_progress_updater
 from load_data import check_data_loaded, IDOS_VAL_COLUMN
 import os
+from streamlit_option_menu import option_menu
+import streamlit_antd_components as sac
+
+MAIN_COLOR = '#4682b4'
+ACCENT_COLOR = '#f28c8c'
+BACKGROUND = '#DCECFA'
+SAGE = '#8cae9c'
 
 def model_explore():
     st.header('Test Various Model Configurations and View Metrics/Feature Insights')
@@ -16,13 +23,18 @@ def model_explore():
         st.success('Data Loaded -- Ready for Training')
         st.dataframe(data)
         
-        st.markdown('---')
+        sac.divider(label='explore models', icon='controller', align='center', color='gray')
         
-        mode = st.selectbox('Model Training Option', ['Select Option...', 'Run Model and Split by MAC', 'Run Model with MAC as Feature'])
         
-        if mode == 'Select Option...':
-            st.stop()
-        elif mode == 'Run Model and Split by MAC':
+        mode = option_menu(None, ['Run Model and Split by MAC', 'Run Model with MAC as Feature'], 
+                            icons=['geo', 'globe-americas'], orientation='horizontal',
+                            styles={
+                                'container': {'background-color': BACKGROUND},
+                                'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+                                'nav-link': {'color': MAIN_COLOR}
+                            })        
+
+        if mode == 'Run Model and Split by MAC':
             run_mac_split()
         elif mode == 'Run Model with MAC as Feature':
             run_all_macs()
@@ -32,14 +44,15 @@ def model_explore():
 
 
 def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options): 
-    run_data = df 
+    run_data = df
+    #run_data.set_index('NPI', inplace=True)
     run_data = run_data.replace('NO', 0, regex=False)
     run_data = run_data.replace('YES', 1, regex=False)
     
-    if not beneficiaries and not services and any('Beneficiaries' in col for col in run_data.columns) or any('Services' in col for col in run_data.columns): 
-        st.error('One of Beneficiaries or Services must be selected')
-        st.stop()
-    elif not beneficiaries: 
+    # if not beneficiaries and not services and any('Beneficiaries' in col for col in run_data.columns) or any('Services' in col for col in run_data.columns): 
+    #     st.error('One of Beneficiaries or Services must be selected')
+    #     st.stop()
+    if not beneficiaries: 
         run_data = run_data.drop([col for col in run_data.columns if 'Beneficiaries' in col], axis=1)
     elif not services: 
         run_data = run_data.drop([col for col in run_data.columns if 'Services' in col], axis=1)
@@ -75,19 +88,42 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
     
     return run_data
 
+
 def show_pdf(file_path): 
     with open(file_path, "rb") as f:
         base64_path = base64.b64encode(f.read()).decode('utf-8')
     pdf_display = f'<iframe src="data:application/pdf;base64,{base64_path}" width="700" height="1000" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True) 
     
+    
 def feature_selection(key_header, all_macs): 
+    sac.divider(label='feature selection', icon='toggles', align='center', color='gray', key=f'{key_header}_feat_divider')
     df = st.session_state['generated_df']
+    ex_options = {
+        'Time_Features':False, 
+        'Sole_Prop':False,
+        'Min_Dist':False,
+        'Enum_Time':False
+    }    
+    ex_descriptions = {
+        'Time_Features': 'Mean, median, standard deviation, range, rate of change over selected years',
+        'Sole_Prop': 'If the physician is a sole proprietor',
+        'Min_Dist': 'The nearest distance to an iDose user',
+        'Enum_Time': 'Time since the NPI was created'
+    }   
+    
+    if st.session_state.get('default_settings', []): 
+        default_settings = st.session_state['default_settings']
+    else:
+        default_settings = {'beneficiaries':False, 'services':True, 'totals':False, 'proportions':True, 'balance_classes':True,
+                            'selected_options':[True for feat in new_feats.keys() if any(feat in val for val in df.columns)], 
+                            'ex_options':{key:True for key in ex_options.keys()}, 'use_mac':True}
+    
     with st.container(border=True):
         if any('Services' in col for col in df.columns) and any('Beneficiaries' in col for col in df.columns):  
             st.markdown('##### Select Data Source (Or Both):')
-            beneficiaries = st.checkbox('Beneficiaries', key=f'{key_header}_beneficiaries')
-            services = st.checkbox('Services', value=True, key=f'{key_header}_services')
+            beneficiaries = st.checkbox('Beneficiaries', key=f'{key_header}_beneficiaries', value=default_settings['beneficiaries'])
+            services = st.checkbox('Services', key=f'{key_header}_services', value=default_settings['services'])
             st.markdown("<br>", unsafe_allow_html=True)
         else: 
             beneficiaries, services = False, False
@@ -95,33 +131,23 @@ def feature_selection(key_header, all_macs):
         st.markdown('##### Select Base Features:')
         selected_options = []
         cols = st.columns(3)
+        default_options = default_settings['selected_options']
         options = [feat for feat in new_feats.keys() if any(feat in val for val in df.columns)]
+        if len(default_options) != len(options):
+            default_options = [True] * len(options)
+        
         for i, option in enumerate(options): 
             col = cols[i % 3]
-            if col.checkbox(option, value=True, key=f'{key_header}_{option}'): 
+            if col.checkbox(option, value=default_options[i], key=f'{key_header}_{option}'): 
                 selected_options.append(option)
         st.markdown("<br>", unsafe_allow_html=True)
             
         st.markdown('##### Select Data Type (Or Both):')
-        proportions = st.checkbox('Proportions (of all selected features)', value=True, key=f'{key_header}_proportions')
-        totals = st.checkbox('Totals (raw total for each selected feature)', key=f'{key_header}_totals')
+        proportions = st.checkbox('Proportions (of all selected features)', value=default_settings['proportions'], key=f'{key_header}_proportions')
+        totals = st.checkbox('Totals (raw total for each selected feature)', key=f'{key_header}_totals', value=default_settings['totals'])
         st.markdown("<br>", unsafe_allow_html=True)
     
         st.markdown('##### Extra Feature Options:')
-        
-        ex_options = {
-            'Time_Features':False, 
-            'Sole_Prop':False,
-            'Min_Dist':False,
-            'Enum_Time':False
-        }    
-        ex_descriptions = {
-            'Time_Features': 'Mean, median, standard deviation, range, rate of change over selected years',
-            'Sole_Prop': 'If the physician is a sole proprietor',
-            'Min_Dist': 'The nearest distance to an iDose user',
-            'Enum_Time': 'Time since the NPI was created'
-        }   
-        
         no_time = False
         for i, ex in enumerate(ex_options.keys()): 
             if ex == 'Time_Features': 
@@ -130,11 +156,11 @@ def feature_selection(key_header, all_macs):
                         no_time = True
                         continue
                 
-                if not any(str(year) in col for year in range(2013,int(MOST_UP_TO_DATE_CMS_YEAR)) for col in df.columns): 
+                if not any(str(year) in col for year in range(2013,int(MOST_UP_TO_DATE_CMS_YEAR)) for col in df.columns) and not any('Range' in col for col in df.columns): 
                     no_time = True
                     continue
             
-            if st.checkbox(f'{ex} -- {ex_descriptions[ex]}', value=True, key=f'{key_header}_{ex}'): 
+            if st.checkbox(f'{ex} -- {ex_descriptions[ex]}', key=f'{key_header}_{ex}', value=default_settings['ex_options'][ex]): 
                 ex_options[ex] = True
         st.markdown("<br>", unsafe_allow_html=True)
     
@@ -144,9 +170,12 @@ def feature_selection(key_header, all_macs):
         
         if all_macs: 
             st.markdown('##### MAC Options:')
-            use_mac = st.toggle('MAC -- Use MACs as features (onehot encoded)', value=True)
+            use_mac = st.toggle('MAC -- Use MACs as features (onehot encoded)', value=default_settings['use_mac'])
         else: 
             use_mac = False
+            
+    st.session_state['default_settings'] = {'beneficiaries':beneficiaries, 'services':services, 'totals':totals, 'proportions':proportions,
+                                            'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac}
     
     return beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac
 
@@ -155,140 +184,158 @@ def run_mac_split():
     #TODO Make it so that previously selected options will be saved
     
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, _ = feature_selection('mac_split_explore', all_macs=False)
-    with st.container(): 
+    feat_settings = {'beneficiaries': beneficiaries, 'services': services, 'totals':totals, 'proportions':proportions, 'no_time':no_time, 'balance_classes':balance_classes,
+                    'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state['start_year']
+    }
+    
+    with st.container(border=True): 
         model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes')
 
-    if st.button('Run Model', key='mac_split'): 
-        df = st.session_state['generated_df']
+        if st.button('Run Model', key='mac_split', icon=':material/sprint:', width='stretch'): 
+            df = st.session_state['generated_df']
+                
+            run_data = prep_run_data(df, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options)
+            run_data['MAC'] = df['MAC']
+            y = df[st.session_state['idose_col_name']]
             
-        run_data = prep_run_data(df, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options)
-        run_data['MAC'] = df['MAC']
-        y = df[st.session_state['idose_col_name']]
-        
-        st.text('Running model with this dataset...')   
-        st.dataframe(run_data)
-        
-        progress_reporter = make_progress_updater(len(np.unique(run_data['MAC'])))
-        
-        mac_clfs, pdf_report, web_info = run_model_mac_split(run_data, y, balance_classes, progress_reporter, model_name)
+            st.text('Running model with this dataset...')   
+            st.dataframe(run_data)
+            
+            progress_reporter = make_progress_updater(len(np.unique(run_data['MAC'])))
+            
+            mac_clfs, pdf_report, web_info = run_model_mac_split(run_data, y, balance_classes, progress_reporter, model_name, feat_settings)
+            mac_clf_w_feats = [(mac_clf[0], mac_clf[1], {
+                'beneficiaries':beneficiaries, 'services':services, 'proportions':proportions, 'totals':totals, 'no_time':no_time, 
+                'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state.get('start_year', None)
+            }) for mac_clf in mac_clfs]
+                        
+            total_dupes = 1
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
+            else:
+                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                    for _, clf_file_name in mac_clfs:
+                        if f'{clf_file_name}_overwritten' in clf_name: 
+                            total_dupes += 1
+                
+            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+                for mac_clf in mac_clfs: 
+                    if mac_clf[1] == saved_clf: 
+                        backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                        st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != saved_clf]
+                        st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
+            st.session_state['saved_classifiers'].extend(mac_clf_w_feats)
+            
+            st.markdown('##### FEATURE INFO')
+            feat_dict = web_info[list(web_info.keys())[0]]['FEATURE_INFO']
+            st.dataframe(feat_dict, width=2000)
+            
+            for mac in np.unique(run_data['MAC']): 
+                with st.expander(f'{mac} Results'): 
+                    st.markdown(f'##### CLASS_SUMMARY')
+                    st.markdown(f'###### {web_info[mac]['CLASS_SUMMARY']}')
+                    cols = st.columns(3)
+                    for i, metric in enumerate(web_info[mac].keys()): 
+                        if metric == 'FEATURE_INFO' or metric == 'CLASS_SUMMARY': 
+                            continue 
+                        elif metric == 'METRICS':
+                            col = cols[i%3]
+                            col.markdown(f'##### {metric}')
+                            col.table(web_info[mac][metric])
+                        else: 
+                            col = cols[i%3]
+                            col.markdown(f'##### {metric}')
+                            col.image(web_info[mac][metric])
+            
+            
+            with st.expander('Full PDF Report'):
+                show_pdf(pdf_report)
+                
+                with open(pdf_report, 'rb') as f: 
+                    pdf_bytes = f.read()
                     
-        if not st.session_state.get('saved_classifiers', []):
-            st.session_state['saved_classifiers'] = []
-        for mac, saved_clf in st.session_state['saved_classifiers']: 
-            for mac_clf in mac_clfs: 
-                if mac_clf[1] == saved_clf: 
-                    backup_file = f'{saved_clf}_overwritten-old'
-                    if os.path.exists(backup_file): 
-                        os.remove(backup_file)
-                    if os.path.exists(saved_clf):
-                        os.rename(saved_clf, backup_file)
-                    st.session_state['saved_classifiers'].remove((mac, saved_clf))
-                    st.session_state['saved_classifiers'].append((mac, f'{saved_clf}_overwritten-old'))
-        st.session_state['saved_classifiers'].extend(mac_clfs)
+                # st.download_button(
+                #     label="Download PDF Report",
+                #     data=pdf_bytes,
+                #     file_name=pdf_report,
+                #     mime='application/pdf'
+                # )
+            
+    sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='split_end')
+    
+    
+def run_all_macs(): 
+    beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac  = feature_selection('mac_feature_explore', all_macs=True)
+    feat_settings = {'beneficiaries': beneficiaries, 'services': services, 'totals':totals, 'proportions':proportions, 'no_time':no_time, 'balance_classes':balance_classes,
+                     'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 'start_year':st.session_state['start_year']
+    }
+    
+    with st.container(border=True):
+        model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes', key='feature_mac_name')
+
+        if st.button('Run Model', key='mac_feature', icon=':material/sprint:', width='stretch'):
+            #st.session_state['saved_classifiers'] = []
+            
+            df = st.session_state['generated_df']                 
+            run_data = prep_run_data(df, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options)
+            if use_mac: 
+                run_data['MAC'] = df['MAC']
+                df_dummies = pd.get_dummies(run_data['MAC'], dummy_na=False, drop_first=False).astype(int)
+                run_data_onehot = pd.concat([run_data.drop('MAC', axis=1), df_dummies], axis=1)
+            y = df[st.session_state['idose_col_name']]
         
-        st.markdown('##### FEATURE INFO')
-        feat_dict = web_info[list(web_info.keys())[0]]['FEATURE_INFO']
-        st.dataframe(feat_dict, width=2000)
-        
-        for mac in np.unique(run_data['MAC']): 
-            with st.expander(f'{mac} Results'): 
-                st.markdown(f'##### CLASS_SUMMARY')
-                st.markdown(f'###### {web_info[mac]['CLASS_SUMMARY']}')
+                                    
+            clf_file_name, pdf_report, web_info = run_model_all_macs(run_data_onehot, y, balance_classes, model_name, feat_settings)
+            
+            st.success('Model training finished!')
+            
+            total_dupes = 1
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
+            else:
+                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                    if f'{clf_file_name}_overwritten' in clf_name: 
+                        total_dupes += 1
+                
+            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+                if clf_file_name == f'{saved_clf}_{mac}': 
+                    backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                    st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != f'{saved_clf}_{mac}']
+                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
+            st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings))
+            
+            st.markdown('##### CLASS SUMMARIES')
+            st.markdown(f'###### {web_info['ALL_MACS']['CLASS_SUMMARY']}')
+            st.markdown('##### FEATURE INFO')
+            feat_dict = web_info['ALL_MACS']['FEATURE_INFO']
+            st.dataframe(feat_dict, width=2000)
+            
+            with st.expander('ALL MAC Results'): 
                 cols = st.columns(3)
-                for i, metric in enumerate(web_info[mac].keys()): 
+                for i, metric in enumerate(web_info['ALL_MACS'].keys()): 
                     if metric == 'FEATURE_INFO' or metric == 'CLASS_SUMMARY': 
                         continue 
                     elif metric == 'METRICS':
                         col = cols[i%3]
                         col.markdown(f'##### {metric}')
-                        col.table(web_info[mac][metric])
-                    else: 
+                        col.table(web_info['ALL_MACS'][metric])
+                    else:
                         col = cols[i%3]
                         col.markdown(f'##### {metric}')
-                        col.image(web_info[mac][metric])
-        
-        
-        with st.expander('Full PDF Report'):
-            show_pdf(pdf_report)
+                        col.image(web_info['ALL_MACS'][metric])
             
-            with open(pdf_report, 'rb') as f: 
-                pdf_bytes = f.read()
+            with st.expander('Full PDF Report'): 
+                show_pdf(pdf_report)
                 
-            # st.download_button(
-            #     label="Download PDF Report",
-            #     data=pdf_bytes,
-            #     file_name=pdf_report,
-            #     mime='application/pdf'
-            # )
-            
-    st.markdown('---')
+                with open(pdf_report, 'rb') as f: 
+                    pdf_bytes = f.read() 
+                    
+                # st.download_button(
+                #     label='Download PDF Report',
+                #     data=pdf_bytes,
+                #     file_name=pdf_report,
+                #     mime='application/pdf'
+                # )
     
-    
-def run_all_macs(): 
-    beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac  = feature_selection('mac_feature_explore', all_macs=True)
-    
-    model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes', key='feature_mac_name')
+    sac.divider(label='end', icon='sign-dead-end', align='center', color='gray')
 
-    if st.button('Run Model', key='mac_feature'):
-        #st.session_state['saved_classifiers'] = []
-        
-        df = st.session_state['generated_df']                 
-        run_data = prep_run_data(df, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options)
-        if use_mac: 
-            run_data['MAC'] = df['MAC']
-            df_dummies = pd.get_dummies(run_data['MAC'], dummy_na=False, drop_first=False).astype(int)
-            run_data_onehot = pd.concat([run_data.drop('MAC', axis=1), df_dummies], axis=1)
-        y = df[st.session_state['idose_col_name']]
-    
-                                
-        clf_file_name, pdf_report, web_info = run_model_all_macs(run_data_onehot, y, balance_classes, model_name)
-        
-        st.success('Model training finished!')
-        
-        if not st.session_state.get('saved_classifiers', []): 
-            st.session_state['saved_classifiers'] = []
-        for mac, saved_clf in st.session_state['saved_classifiers']: 
-            if clf_file_name == f'{saved_clf}_{mac}': 
-                backup_file = f'{saved_clf}_overwritten-old'
-                if os.path.exists(backup_file): 
-                    os.remove(backup_file)
-                if os.path.exists(saved_clf):
-                    os.rename(saved_clf, backup_file)
-                st.session_state['saved_classifiers'].remove((mac,saved_clf))
-                st.session_state['saved_classifiers'].append((mac, f'{saved_clf}_overwritten-old'))
-        st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name))
-        
-        st.markdown('##### CLASS SUMMARIES')
-        st.markdown(f'###### {web_info['ALL_MACS']['CLASS_SUMMARY']}')
-        st.markdown('##### FEATURE INFO')
-        feat_dict = web_info['ALL_MACS']['FEATURE_INFO']
-        st.table(feat_dict, width=2000)
-        
-        with st.expander('ALL MAC Results'): 
-            cols = st.columns(3)
-            for i, metric in enumerate(web_info['ALL_MACS'].keys()): 
-                if metric == 'FEATURE_INFO' or metric == 'CLASS_SUMMARY': 
-                    continue 
-                elif metric == 'METRICS':
-                    col = cols[i%3]
-                    col.markdown(f'##### {metric}')
-                    col.table(web_info['ALL_MACS'][metric])
-                else:
-                    col = cols[i%3]
-                    col.markdown(f'##### {metric}')
-                    col.image(web_info['ALL_MACS'][metric])
-        
-        with st.expander('Full PDF Report'): 
-            show_pdf(pdf_report)
-            
-            with open(pdf_report, 'rb') as f: 
-                pdf_bytes = f.read() 
-                
-            # st.download_button(
-            #     label='Download PDF Report',
-            #     data=pdf_bytes,
-            #     file_name=pdf_report,
-            #     mime='application/pdf'
-            # )
-    
-    st.markdown('---')
