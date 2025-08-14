@@ -199,6 +199,8 @@ def run_mac_split():
                     'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state['start_year']
     }
     
+    sac.divider(label='run mac split', icon='play-btn', align='center', color='gray', key=f'mac_split_divider')
+    
     with st.container(border=True): 
         model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes')
 
@@ -259,6 +261,7 @@ def run_mac_split():
                             col.image(web_info[mac][metric])
             
             
+            st.text(pdf_report)
             with st.expander('Full PDF Report'):
                 show_pdf(pdf_report)
                 
@@ -281,6 +284,7 @@ def run_all_macs():
                      'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 'start_year':st.session_state['start_year']
     }
     
+    sac.divider(label='run all macs', icon='play-btn', align='center', color='gray', key=f'all_mac_divider')
     with st.container(border=True):
         model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes', key='feature_mac_name')
 
