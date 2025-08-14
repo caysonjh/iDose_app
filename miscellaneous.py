@@ -1,5 +1,6 @@
 import time
 import streamlit as st
+import streamlit_antd_components as sac
 
 def center_header(text, level=1):
     return st.markdown(f"<h{level} style='text-align: center;'>{text}</h{level}>", unsafe_allow_html=True)
@@ -36,3 +37,50 @@ def make_progress_updater(total):
         time_remaining_text.empty()
         
     return update_progress, clear_progress
+
+def sac_button(value, icon=None, color=None): 
+    clicked = sac.buttons([
+        sac.ButtonsItem(label=value, icon=icon, color=color)
+    ], align='center')
+    
+    return clicked
+
+
+def set_norm_button():
+    st.markdown("""
+        <style>
+        /* Target all Streamlit buttons */
+        div.stButton > button:first-child {
+            border: 2px solid #000000; /* Outline color & thickness */
+            color: #FFFFFF;             /* Text color */
+            background-color: #4682b4; /* Make it look outlined */
+        }
+
+        /* Change hover effect */
+        div.stButton > button:first-child:hover {
+            background-color: #f28c8c; 
+            color: white;
+            border-color: #000000;  /* Slightly darker outline on hover */
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    
+def set_cancel_button():
+    st.markdown("""
+        <style>
+        /* Target all Streamlit buttons */
+        div.stButton > button:first-child {
+            border: 2px solid #000000; /* Outline color & thickness */
+            color: #FFFFFF;             /* Text color */
+            background-color: #8cae9c; /* Make it look outlined */
+        }
+
+        /* Change hover effect */
+        div.stButton > button:first-child:hover {
+            background-color: #f28c8c; 
+            color: white;
+            border-color: #000000;  /* Slightly darker outline on hover */
+        }
+        </style>
+    """, unsafe_allow_html=True)

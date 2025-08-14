@@ -7,8 +7,8 @@ import re
 from datetime import datetime
 from itertools import chain
 from code_groupings import new_feats
-from miscellaneous import make_progress_updater, center_header, center_text
-
+from miscellaneous import make_progress_updater, center_header, center_text, sac_button, set_norm_button, set_cancel_button
+import streamlit_antd_components as sac
 
 IDOSE_FILE = 'idose_npis.txt'
 NON_IDOSE_FILE = 'non_idose_npis.txt'
@@ -37,28 +37,32 @@ def update_info():
     
     return train_list, cpt_codes, drug_list, idose_npis
 
-def parse_npi_list(text): 
-    return set(x.strip() for x in text.strip().splitlines() if x.strip())
-
 
 def load_and_prepare_data():
+    st.markdown("""<style>div.stButton > button {display: block;margin: 0 auto;}</style>""", unsafe_allow_html=True)
     center_header('Load and Prepare Data for Model Training', 2)
     col1, col_spacer, col2 = st.columns([15, 0.1, 15])
     
     with col1:
         st.subheader('Auto-generate data directly from CMS')
-        start_year = st.selectbox("Starting Year -- including more years will take longer to generate data", list(range(2023, 2012, -1)))
-        if st.button("Generate/Regenerate Data"): 
+        start_year = st.selectbox("Starting Year -- including more years will take longer to generate data", list(range(2023, 2012, -1)), key='load_data_startbox')
+        
+        if st.button('Generate/Regenerate Data', icon=':material/database_upload:', type='primary', width='stretch'):
             st.session_state['idose_col_name'] = IDOS_VAL_COLUMN
+            
+            set_cancel_button()
             cancel_button = st.empty()
-            if cancel_button.button('Cancel'):
+            if cancel_button.button('Cancel', icon=':material/cancel:', key='cancel_load_data', width='stretch'):
                 st.stop()
+            
             
             train_list, cpt_codes, drug_list, idose_npis = update_info()
             
             progress_updater, progress_cleaner = make_progress_updater(len(train_list)*3)
             
             df1, cpt_missing = get_code_data_from_cms(train_list, cpt_codes, str(start_year), progress_updater, 0)
+            idose_zips = df1[df1['NPI'].isin(idose_npis)][['NPI','ZIP']]
+            idose_zips.to_csv('idose_zips.csv')
             cpt_status = st.empty()
             cpt_status.success('Completed fetching CPT code data')
             
@@ -94,9 +98,9 @@ def load_and_prepare_data():
             
             prep_data_text = st.empty()
             prep_data_text.text('Formatting Data...')
-            all_data = format_cms_data(all_data, start_year, MOST_UP_TO_DATE_CMS_YEAR)
-            st.session_state.generated_df = all_data
-            st.start_year = start_year
+            all_data = format_cms_data(all_data, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'])
+            st.session_state.generated_df = all_data.set_index('NPI')
+            st.session_state.start_year = start_year
             prep_data_text.empty()
             
             # features = [feat for feat in new_feats.keys() if any(feat in col for col in all_data.columns)]
@@ -112,6 +116,7 @@ def load_and_prepare_data():
             #             st.stop()
             
             cancel_button.empty()
+            set_norm_button()
     
     with col_spacer:
         st.markdown("<div style='height: 600px; border-left: 1px solid lightgray; margin: 0 auto;'></div>", unsafe_allow_html=True)
@@ -130,6 +135,7 @@ def load_and_prepare_data():
             medscout_file = st.file_uploader("Upload MedScout Data", type=['csv','xlsx','xls'])
         with new_col2: 
             st.markdown('##### CMS Data')
+            start_year = st.selectbox("Starting Year For This Data", list(range(2023, 2012, -1)))
             idose_col_name2 = st.text_input(label='iDose Value Column', value='is_idose')
             cms_file = st.file_uploader("Upload Previously Generated CMS Data", type=['csv','xlsx','xls'])
 
@@ -145,8 +151,7 @@ def load_and_prepare_data():
         else: 
             data_file = None
         
-        st.markdown("""<style>div.stButton > button {display: block;margin: 0 auto;}</style>""", unsafe_allow_html=True)
-        if st.button('Load File'):
+        if st.button('Load File', icon=':material/attach_file_add:', type='primary', width='stretch'):
             if data_file is not None: 
                 filename = data_file.name.lower() 
                 try:
@@ -161,6 +166,11 @@ def load_and_prepare_data():
                 except Exception as e:
                     st.error(f"Error loading file: {e}")
                     
+                set_cancel_button()
+                cancel_button = st.empty()
+                if st.button('Cancel', icon=':material/cancel:', width='stretch', key='cancel-format'):
+                    st.stop()
+                    
                 if medscout:
                     text = st.text('Formatting data, this may take a minute...')
                     upload_updater, upload_cleaner = make_progress_updater(len(df)*2+4)
@@ -170,17 +180,22 @@ def load_and_prepare_data():
                         if match: 
                             years.append(int(match.group()))
                     start_year = min(years)
-                    all_data = format_uploaded_data(df, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_col_name, upload_updater)
-                    st.session_state['generated_df'] = all_data
+                    idose_zips = pd.read_csv('idose_zips.csv')
+                    all_data = format_uploaded_data(df, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'], upload_updater)
+                    st.session_state['generated_df'] = all_data.set_index('NPI')
+                    st.session_state['start_year'] = start_year
                     upload_cleaner()
                     text.empty()
                 else:
                     if idose_col_name2 not in df.columns: 
                         st.warning('iDose value column not found in data')
                     else:
-                        st.session_state['generated_df'] = df
+                        st.session_state['generated_df'] = df.set_index('NPI')
+                        st.session_state['start_year'] = start_year
             
                 load_success.empty()
+                cancel_button.empty()
+                set_norm_button()
                 
             else: 
                 if medscout_file and cms_file: 
@@ -203,8 +218,9 @@ def load_and_prepare_data():
             st.write('*NOTE: Regeneration will need to be run when changes are made to the npi list, or if wanting the most updated CMS versions')
             current_datetime = datetime.now()
             formatted_datetime = current_datetime.strftime("%Y%m%d_%H%M%S") 
-            st.download_button('Download Generated Data', st.session_state['generated_df'].to_csv(), f'idose_data_{formatted_datetime}.csv', 'text/csv')
-            
+            st.download_button('Download Generated Data', st.session_state['generated_df'].to_csv(), f'idose_data_{formatted_datetime}.csv', 'text/csv', icon=':material/download:', width='stretch')
+          
+    sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='load_end')  
             
 def check_data_loaded():
     if len(st.session_state.get('generated_df', [])) > 0:
