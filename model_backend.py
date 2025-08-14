@@ -1056,7 +1056,8 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
                 df, y_mac = balance_classes(df, y_mac)
         
         clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                    max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True)
+                                    max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+                                    device='cpu', n_jobs=-1)
         clf.fit(X_train, y_train)
      
         
