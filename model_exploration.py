@@ -69,8 +69,9 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
             continue
         if not ex_options[ex]: 
             run_data = run_data.drop(ex, axis=1)
-        
-    feature_cols = [col for col in run_data.columns if any(option in col for option in selected_options)] 
+      
+    true_options = [option for option in selected_options if selected_options[option]]  
+    feature_cols = [col for col in run_data.columns if any(option in col for option in true_options)] 
     other_cols = [col for col in run_data.columns if col not in feature_cols]
     other_df = run_data[other_cols]
     
@@ -117,7 +118,7 @@ def feature_selection(key_header, all_macs):
         default_settings = st.session_state['default_settings']
     else:
         default_settings = {'beneficiaries':False, 'services':True, 'totals':False, 'proportions':True, 'balance_classes':True,
-                            'selected_options':[True for feat in new_feats.keys() if any(feat in val for val in df.columns)], 
+                            'selected_options':{feat:True for feat in new_feats.keys() if any(feat in val for val in df.columns)}, 
                             'ex_options':{key:True for key in ex_options.keys()}, 'use_mac':True}
     
     with st.container(border=True):
@@ -130,17 +131,21 @@ def feature_selection(key_header, all_macs):
             beneficiaries, services = False, False
     
         st.markdown('##### Select Base Features:')
-        selected_options = []
+        selected_options = {}
         cols = st.columns(3)
         default_options = default_settings['selected_options']
         options = [feat for feat in new_feats.keys() if any(feat in val for val in df.columns)]
-        if len(default_options) != len(options):
-            default_options = [True] * len(options)
+        for feat in options: 
+            if feat not in default_options: 
+                default_options[feat] = True
+        # if len(default_options) != len(options):
+        #     default_options = [True] * len(options)
         
         for i, option in enumerate(options): 
             col = cols[i % 3]
-            if col.checkbox(option, value=default_options[i], key=f'{key_header}_{option}'): 
-                selected_options.append(option)
+            selected_options[option] = col.checkbox(option, value=default_options[option], key=f'{key_header}_{option}')
+            # if col.checkbox(option, value=default_options[i], key=f'{key_header}_{option}'): 
+            #     selected_options[option] = True
         st.markdown("<br>", unsafe_allow_html=True)
             
         st.markdown('##### Select Data Type (Or Both):')

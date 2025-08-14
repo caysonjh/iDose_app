@@ -102,6 +102,7 @@ def load_and_prepare_data():
             st.session_state.generated_df = all_data.set_index('NPI')
             st.session_state.start_year = start_year
             prep_data_text.empty()
+            cancel_button.empty()
             
             # features = [feat for feat in new_feats.keys() if any(feat in col for col in all_data.columns)]
             # for idx, row in all_data.iterrows(): 
@@ -115,7 +116,6 @@ def load_and_prepare_data():
             #             st.error(f'{feature} services does not match for {idx}')
             #             st.stop()
             
-            cancel_button.empty()
             set_norm_button()
     
     with col_spacer:
@@ -168,7 +168,7 @@ def load_and_prepare_data():
                     
                 set_cancel_button()
                 cancel_button = st.empty()
-                if st.button('Cancel', icon=':material/cancel:', width='stretch', key='cancel-format'):
+                if cancel_button.button('Cancel', icon=':material/cancel:', width='stretch', key='cancel-format'):
                     st.stop()
                     
                 if medscout:

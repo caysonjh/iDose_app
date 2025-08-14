@@ -50,7 +50,7 @@ def load_prediction():
                     st.session_state['predict_model'] = (clf, joblib.load(clf), feat_settings)
         
             if st.session_state.get('predict_model'): 
-                sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magic2')
+                sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic2')
                 run_prediction()
         
         else: 
@@ -65,7 +65,7 @@ def load_prediction():
             feat_settings = None
             st.session_state['predict_model'] = (filename, joblib.load(filename), joblib.load(filename)['feat_settings'])
             st.success('Model loaded successfully!')
-            sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magic3')
+            sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic3')
             run_prediction()
     
     if selected == 'Train New Model': 
@@ -77,7 +77,12 @@ def load_prediction():
             st.dataframe(data)
             
             mode = option_menu(None, ['Train and Save model for specific MAC(s)', 'Train and Save model for all MACs'], 
-                                icons=['geo', 'globe-americas'], orientation='horizontal')        
+                                icons=['geo', 'globe-americas'], orientation='horizontal', 
+                                styles={
+                                'container': {'background-color': BACKGROUND},
+                                'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+                                'nav-link': {'color': MAIN_COLOR}
+                                })        
 
             if mode == 'Train and Save model for specific MAC(s)':
                 clf, feat_settings = train_mac_split(data)
@@ -88,12 +93,12 @@ def load_prediction():
 
             if clf is not None:
                 st.session_state['predict_model'] = (clf, joblib.load(clf), feat_settings)
-                sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magic4')
+                sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic4')
                 run_prediction()
         else: 
             st.error('Data must be loaded first')
             
-    sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
+    #sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
     if 'pred_data' not in st.session_state:
         st.session_state['pred_data'] = None
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='split_end')
@@ -115,7 +120,7 @@ def run_prediction():
                 
                 set_cancel_button()
                 cancel_button = st.empty()
-                if cancel_button.button('Cancel', icon=':material/cancel:'):
+                if cancel_button.button('Cancel', icon=':material/cancel:', width='stretch'):
                     st.stop()
                     
                 train_list, cpt_codes, drug_list, idose_npis = update_info()
@@ -238,6 +243,7 @@ def run_prediction():
             st.text(f'Selected Model: {model_name}')
             st.text(f'Feature Settings: {feat_settings}')
             st.dataframe(data)
+            sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
             
             if st.button('Run Prediction', icon=':material/flight_takeoff:', width='stretch'):
                 run_data = prep_run_data(data, feat_settings['beneficiaries'], feat_settings['services'], feat_settings['proportions'], feat_settings['totals'],
@@ -280,13 +286,14 @@ def run_prediction():
 
                 col1, col2 = st.columns(2)
                 with col2:
+                    st.markdown('###')
                     out_filename = f'predictions_{formatted_datetime}.csv'
                     out.to_csv(out_filename)
                     with open(out_filename, 'rb') as f: 
-                        st.download_button('Download Predictions', icon=':material/person_celebrate:', 
-                                        data=f.read(), file_name=out_filename)
+                        st.download_button('Download Predictions as CSV', icon=':material/person_celebrate:', 
+                                        data=f.read(), file_name=out_filename, width='stretch')
                 with col1:
-                    st.text('Predictions...')
+                    st.markdown('##### Predictions:')
                     st.dataframe(out)
 
     

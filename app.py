@@ -92,8 +92,8 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
     st.session_state['user_id'] = None
     st.session_state['logged_in'] = False
     
-    mode = option_menu(None, ['Login', 'Create User', 'Reset Password'], 
-                    icons=['door-open', 'person-badge', 'key'], orientation='horizontal',
+    mode = option_menu(None, ['Login', 'Create User', 'Reset Password', 'Delete User'], 
+                    icons=['door-open', 'person-badge', 'key', 'trash'], orientation='horizontal',
                     styles={
                         'container': {'background-color': BACKGROUND},
                         'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
@@ -143,6 +143,23 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
                 time.sleep(2)
                 write_users(users)
                 st.rerun()
+    
+    if mode == 'Delete User': 
+        user_id = st.text_input('User ID')
+        password = st.text_input('Password', type='password')
+        
+        if st.button('Delete User', icon=':material/delete:', width='stretch'): 
+            if user_id not in users: 
+                st.error('User does not exist')
+            elif users[user_id] != password: 
+                st.error('Incorrect password for user')
+            else: 
+                del users[user_id]
+                write_users(users)
+                st.success(f'Account for {user_id} was deleted')
+                time.sleep(2)
+                st.rerun()
+    
     
 else:
     with st.sidebar:
