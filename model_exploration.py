@@ -10,6 +10,7 @@ from load_data import check_data_loaded, IDOS_VAL_COLUMN
 import os
 from streamlit_option_menu import option_menu
 import streamlit_antd_components as sac
+from storage_interaction import write_user_environment
 
 MAIN_COLOR = '#4682b4'
 ACCENT_COLOR = '#f28c8c'
@@ -174,8 +175,13 @@ def feature_selection(key_header, all_macs):
         else: 
             use_mac = False
             
-    st.session_state['default_settings'] = {'beneficiaries':beneficiaries, 'services':services, 'totals':totals, 'proportions':proportions,
+    
+    new_settings = {'beneficiaries':beneficiaries, 'services':services, 'totals':totals, 'proportions':proportions,
                                             'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac}
+    
+    st.session_state['default_settings'] = new_settings
+    st.session_state['user_environment']['feature_settings'] = new_settings
+    write_user_environment()
     
     return beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac
 

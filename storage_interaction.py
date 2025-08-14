@@ -65,6 +65,9 @@ def load_user_environment(user_id):
         if 'non_idose_npis' in user_settings: 
             non_idose_npis = user_settings['non_idose_npis']
             loc_update_non_idose_npis(non_idose_npis)
+        
+        if 'feature_settings' in user_settings: 
+            st.session_state['default_settings'] = user_settings['feature_settings']
 
 
 def write_full_environment(): 
