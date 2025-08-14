@@ -72,6 +72,8 @@ def save_model():
 def train_all_macs(data):
     clf_file_name = None
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac = feature_selection('mac_split_save', all_macs=True)
+    
+    sac.divider(label='train all macs', icon='play-btn', align='center', color='gray', key=f'train_all_divider')
     with st.container(border=True):
         model_name = st.text_input(label='Model Name?', value='idose_prediction', placeholder='eg. glaucoma_surgery_codes', key='train_macs')
         
@@ -121,6 +123,7 @@ def train_mac_split(data):
     run_data['MAC'] = data['MAC']
     y = data[st.session_state['idose_col_name']]
     
+    sac.divider(label='train mac split', icon='play-btn', align='center', color='gray', key=f'train_split_divider')
     with st.container(border=True): 
         mac_options = np.unique(run_data['MAC'])
         macs = st.multiselect('Select one or more MACs', mac_options)

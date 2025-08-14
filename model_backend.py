@@ -34,6 +34,8 @@ from scipy.special import expit
 from url_info import code_urls, drug_urls, MOST_UP_TO_DATE_CMS_YEAR, nppes_url
 from model_parameters import XGB_PARAMS
 import streamlit as st
+from sklearn.ensemble import GradientBoostingClassifier 
+from sklearn.inspection import PartialDependenceDisplay
 
 #### GLOBAL VARIABLES ####
 
@@ -53,7 +55,8 @@ def balance_classes(X, y):
     return X_smote, y_smote
 
 def plot_importance(clf, importance_type, max_num_features): 
-    importances = clf.get_booster().get_score(importance_type=importance_type)
+    #importances = clf.get_booster().get_score(importance_type=importance_type)
+    importances = dict(zip(clf.feature_names_in_, clf.feature_importances_))
     sorted_importances = sorted(importances.items(), key=lambda x: x[1], reverse=True)[:max_num_features]
     features, scores = zip(*sorted_importances)
     if max_num_features > len(features):
@@ -74,7 +77,10 @@ def plot_importance(clf, importance_type, max_num_features):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
 
 def get_importances(clf, max_num_features):
-    importances = dict(sorted(clf.get_booster().get_score(importance_type='gain').items(), key=lambda item: item[1], reverse=True))
+    #importances = dict(sorted(clf.get_booster().get_score(importance_type='gain').items(), key=lambda item: item[1], reverse=True))
+    importances = dict(zip(clf.feature_names_in_, clf.feature_importances_))
+    importances = dict(sorted(importances.items(), key=lambda item: item[1], reverse=True))
+
     #print(list(importances.items()))
     plot_importance(clf, importance_type='gain', max_num_features=max_num_features)
     plt.savefig('images\\importances.png') 
@@ -445,9 +451,6 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         shap_feature_table = shap_feature_table.to_dict(orient='records')
         
         #### PARTIAL DEPENDENCE PLOT ###
-
-        from sklearn.ensemble import GradientBoostingClassifier 
-        from sklearn.inspection import PartialDependenceDisplay
         
         temp_clf = GradientBoostingClassifier(**XGB_PARAMS)
         temp_clf.fit(X_full, y_full)
@@ -489,7 +492,7 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         # fig, ax = plt.subplots(figsize=(20,10), dpi=300)
         # plot_tree(clf, num_trees=0, rankdir='UT', ax=ax)
         tree_path = f'{os.getcwd()}\\images\\xgb_tree_{mac}.png'
-        plot_xgb_tree_manual(clf, tree_path, 0, (50, 10))
+        #plot_xgb_tree_manual(clf, tree_path, 0, (50, 10))
         
         prediction_labels_images.append(cm_path)
         feature_importance_images.append(fi_path)        
@@ -544,7 +547,7 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
     )
 
     
-    path_wkhtmltopdf = r'wkhtmltopdf.exe'
+    path_wkhtmltopdf = r'"/usr/bin/wkhtmltopdf"'
     config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
     options = {'enable-local-file-access': None}
 
@@ -1055,9 +1058,10 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
                 X_train, y_train = balance_classes(X_train, y_train)
                 df, y_mac = balance_classes(df, y_mac)
         
-        clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                    max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
-                                    device='cpu', n_jobs=-1, tree_method='hist')
+        # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
+        #                             max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+        #                             device='cpu', n_jobs=-1, tree_method='hist')
+        clf = GradientBoostingClassifier(**XGB_PARAMS)
         clf.fit(X_train, y_train)
      
         
@@ -1122,9 +1126,11 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
                 X, y = balance_classes(X, y)
         
         
-        clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
-                                device='cpu', n_jobs=-1, tree_method='hist')
+        # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
+        #                         max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+        #                         device='cpu', n_jobs=-1, tree_method='hist')
+        
+        clf = GradientBoostingClassifier(**XGB_PARAMS)
         
         clf.fit(X_train, y_train)
         
