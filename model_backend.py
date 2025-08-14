@@ -547,7 +547,8 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
     )
 
     
-    path_wkhtmltopdf = r'"/usr/bin/wkhtmltopdf"'
+    #path_wkhtmltopdf = r'"/usr/bin/wkhtmltopdf"'
+    path_wkhtmltopdf = 'wkhtmltopdf.exe'
     config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
     options = {'enable-local-file-access': None}
 
@@ -1181,9 +1182,10 @@ def train_model(X, y, balance_class, model_name, mac, feat_settings):
             if len(X) > 8: 
                 X, y = balance_classes(X, y)
         
-        clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
-                                device='cpu', n_jobs=-1, tree_method='hist')
+        # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
+        #                         max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+        #                         device='cpu', n_jobs=-1, tree_method='hist')
+        clf = GradientBoostingClassifier(**XGB_PARAMS)
         
         clf.fit(X, y)
         
