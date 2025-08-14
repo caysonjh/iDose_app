@@ -14,6 +14,7 @@ import re
 from datetime import datetime
 import streamlit_antd_components as sac
 from miscellaneous import set_cancel_button, set_norm_button
+from miscellaneous import center_header
 
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
@@ -106,7 +107,7 @@ def load_prediction():
 
 def run_prediction(): 
     if st.session_state.get('predict_model'): 
-        st.markdown(f'### Selected Model: {st.session_state['predict_model'][0]}')
+        center_header(f'### Selected Model: {st.session_state['predict_model'][0]}', 3)
         model_name = st.session_state['predict_model'][0]
         model = st.session_state['predict_model'][1]['model']
         feat_settings = st.session_state['predict_model'][2]
