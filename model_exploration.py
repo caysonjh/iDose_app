@@ -92,10 +92,14 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
 
 
 def show_pdf(file_path): 
+    st.text('Note, pdf will not generate if it is too large. Download instead to view:')
     with open(file_path, "rb") as f:
         base64_path = base64.b64encode(f.read()).decode('utf-8')
     pdf_display = f'<iframe src="data:application/pdf;base64,{base64_path}" width="700" height="1000" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True) 
+    
+    with open(file_path, 'rb') as f: 
+        st.download_button('Download PDF', f, file_name=file_path, icon=':material/download:')
     
     
 def feature_selection(key_header, all_macs): 
@@ -261,7 +265,7 @@ def run_mac_split():
                             col.image(web_info[mac][metric])
             
             
-            st.text(pdf_report)
+            #st.text(pdf_report)
             with st.expander('Full PDF Report'):
                 show_pdf(pdf_report)
                 
