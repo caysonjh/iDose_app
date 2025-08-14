@@ -106,6 +106,7 @@ def load_prediction():
 
 def run_prediction(): 
     if st.session_state.get('predict_model'): 
+        st.markdown(f'### Selected Model: {st.session_state['predict_model'][0]}')
         model_name = st.session_state['predict_model'][0]
         model = st.session_state['predict_model'][1]['model']
         feat_settings = st.session_state['predict_model'][2]
