@@ -1057,7 +1057,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         
         clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
                                     max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
-                                    device='cpu', n_jobs=-1)
+                                    device='cpu', n_jobs=-1, tree_method='hist')
         clf.fit(X_train, y_train)
      
         
@@ -1123,7 +1123,8 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         
         
         clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True)
+                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+                                device='cpu', n_jobs=-1, tree_method='hist')
         
         clf.fit(X_train, y_train)
         
@@ -1175,7 +1176,8 @@ def train_model(X, y, balance_class, model_name, mac, feat_settings):
                 X, y = balance_classes(X, y)
         
         clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
-                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True)
+                                max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
+                                device='cpu', n_jobs=-1, tree_method='hist')
         
         clf.fit(X, y)
         
