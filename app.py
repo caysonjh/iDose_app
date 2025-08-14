@@ -84,6 +84,8 @@ st.markdown("""
 set_norm_button()
 
 users = load_users()
+import shutil
+st.text(f'path: {shutil.which('wkhtmltopdf')}')
 
 #### MAIN MENU FUNCTION ####
 
