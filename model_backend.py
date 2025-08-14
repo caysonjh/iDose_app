@@ -546,9 +546,11 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         feature_info=feature_info
     )
 
-    
-    path_wkhtmltopdf = 'wkhtmltopdf.exe' if os.path.exists('wkhtmltopdf.exe') else r'"/usr/bin/wkhtmltopdf"'
+    import shutil
+    #path_wkhtmltopdf = 'wkhtmltopdf.exe' if os.path.exists('wkhtmltopdf.exe') else r'"/usr/bin/wkhtmltopdf"'
     #path_wkhtmltopdf = 'wkhtmltopdf.exe'
+    
+    path_wkhtmltopdf = shutil.which('wkhtmltopdf')
     config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
     options = {'enable-local-file-access': None}
 
