@@ -334,7 +334,7 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         #web_info[mac] = {}
         
         if balance_class: 
-            if (y_val == 1).sum() >= 6 and (y_val == 0).sum() >= 6:
+            if (y_val == 1).sum() >= 8 and (y_val == 0).sum() >= 8:
                 X_val, y_val = balance_classes(X_val, y_val)
             X_full, y_full = balance_classes(X_full, y_full)
                 
@@ -1051,7 +1051,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         X_train, X_test, y_train, y_test = train_test_split(df, y_mac, test_size=0.2) 
         
         if balance_class: 
-            if len(X_train) > 6:
+            if len(X_train) > 8:
                 X_train, y_train = balance_classes(X_train, y_train)
                 df, y_mac = balance_classes(df, y_mac)
         
@@ -1116,7 +1116,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2) 
         
         if balance_class: 
-            if len(X_train) > 6:
+            if len(X_train) > 8:
                 X_train, y_train = balance_classes(X_train, y_train)
                 X, y = balance_classes(X, y)
         
@@ -1170,7 +1170,7 @@ def train_model(X, y, balance_class, model_name, mac, feat_settings):
         y = y > 0 
         
         if balance_class: 
-            if len(X) > 6: 
+            if len(X) > 8: 
                 X, y = balance_classes(X, y)
         
         clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
