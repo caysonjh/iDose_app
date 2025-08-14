@@ -36,6 +36,7 @@ from model_parameters import XGB_PARAMS
 import streamlit as st
 from sklearn.ensemble import GradientBoostingClassifier 
 from sklearn.inspection import PartialDependenceDisplay
+from sklearn.base import clone
 
 #### GLOBAL VARIABLES ####
 
@@ -1015,24 +1016,6 @@ def get_nppes_info(npi_list, progress_callback=None, start_idx=0):
     
     return final_df, missing_npis
 
-# from itertools import chain
-# all_codes = list(chain.from_iterable(new_feats.values()))
-# drug_list = [drug for drug in all_codes if drug[-1].isalpha() and drug[0].isalpha()]
-# cpt_codes = [code for code in all_codes if not code[-1].isalpha()]
-# npi_list = ['1144665878']
-# df, miss = get_code_data_from_cms(npi_list, cpt_codes=cpt_codes, start_year='2023')
-# #print(df)
-
-# df2, _ = get_drug_data_from_cms(npi_list, drugs=drug_list, start_year='2023')
-# #print(df2)
-# df3, _ = get_nppes_info(npi_list)
-# #print(df3)
-# df_temp = pd.merge(df, df2, on=['NPI'])
-# all_data = pd.merge(df_temp, df3, on=['NPI'])
-# all_data['is_idose'] = True
-# print(all_data['CPT_65820_Total_Services_2023'])
-
-# print(format_cms_data(all_data, '2023', MOST_UP_TO_DATE_CMS_YEAR)['GONIOTOMY_Services_TOTAL'])
 
 from miscellaneous import set_cancel_button, set_norm_button
 
@@ -1067,7 +1050,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         #                             device='cpu', n_jobs=-1, tree_method='hist')
         clf = GradientBoostingClassifier(**XGB_PARAMS)
         clf.fit(X_train, y_train)
-     
+        #st.text(clf.score(X_test, y_test))
         
         mac_values[mac]['clf'] = clf
         mac_values[mac]['X_val'] = X_test
@@ -1076,7 +1059,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         mac_values[mac]['y_full'] = y_mac
         mac_values[mac]['type'] = 'Binary'
         
-        full_clf = clf 
+        full_clf = clone(clf) 
         full_clf.fit(df, y_mac)
         clf_file_name = f'{model_name}_{mac}.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
@@ -1149,7 +1132,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         mac_values['ALL_MACS']['y_full'] = y 
         mac_values['ALL_MACS']['type'] = 'Binary' 
         
-        full_clf = clf 
+        full_clf = clone(clf) 
         full_clf.fit(X, y)
         clf_file_name = f'{model_name}_ALL_MACS.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
