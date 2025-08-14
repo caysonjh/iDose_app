@@ -7,7 +7,6 @@ from sklearn.model_selection import GridSearchCV
 from jinja2 import Environment, FileSystemLoader
 import pdfkit
 import os
-import webbrowser
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, 
     f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
@@ -15,19 +14,12 @@ from sklearn.metrics import (
 import seaborn as sns
 from scipy.stats import pearsonr 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score 
-from sklearn.decomposition import PCA 
-from sklearn.preprocessing import StandardScaler 
-import umap 
 import seaborn as sns
 from code_groupings import new_feats
-import plotnine as p9
-from scipy.stats import f_oneway
 import shap 
 import joblib
 from datetime import datetime
-from sklearn.inspection import partial_dependence, permutation_importance
-from xgboost import plot_tree
-from sklearn.pipeline import make_pipeline
+from sklearn.inspection import permutation_importance
 from imblearn.over_sampling import SMOTE
 import warnings 
 warnings.simplefilter(action='ignore', category=FutureWarning)
