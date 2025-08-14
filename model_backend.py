@@ -1038,7 +1038,8 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
     progress_callback, model_cleaner = progress_report
     
     set_cancel_button()
-    if st.button('Cancel', key='split_cancel', width='stretch', icon=':material/cancel:'):
+    cancel_button = st.empty()
+    if cancel_button.button('Cancel', key='split_cancel', width='stretch', icon=':material/cancel:'):
         st.stop()
     
     y = y > 0
@@ -1105,6 +1106,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         pdf_file, web_info = generate_model_report(mac_values, features, top_n_features=20, balance_class=balance_class) 
         
     set_norm_button()
+    cancel_button.empty()
     
     return mac_clfs, pdf_file, web_info
 
@@ -1114,7 +1116,8 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         st.dataframe(X)
         
         set_cancel_button()
-        if st.button('Cancel', key='mac_cancel', width='stretch', icon=':material/cancel:'):
+        cancel_button = st.empty()
+        if cancel_button.button('Cancel', key='mac_cancel', width='stretch', icon=':material/cancel:'):
             st.stop()
         
         y = y > 0
@@ -1170,6 +1173,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         pdf_file, web_info = generate_model_report(mac_values, features, top_n_features=20, balance_class=balance_class)
       
     set_norm_button()
+    cancel_button.empty()
             
     return clf_file_name, pdf_file, web_info
 
