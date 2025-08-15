@@ -68,6 +68,7 @@ def add_npi_to_table(npi, contents_label):
     else:   
         new_df = get_nppes_info_for_npis([npi])
         st.session_state[contents_label] = pd.concat([new_df, st.session_state[contents_label]])
+        st.session_state['last_npi'] = npi
         st.rerun()
 
     
@@ -101,12 +102,10 @@ def modify_npi_info():
         with idose_cols[1]:
             idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...')
             if idose_npi and idose_npi != st.session_state['last_npi']: 
-                add_npi_to_table(idose_npi, 'idose_contents')
-                st.session_state['last_npi'] = idose_npi
+                add_npi_to_table(idose_npi, 'idose_contents')          
         with idose_cols[2]: 
             if st.button('Add iDose NPI', icon=':material/cardiology:'): 
                 add_npi_to_table(idose_npi, 'idose_contents')
-                st.session_state['last_npi'] = idose_npi
                 
         #new_idose_contents = st.text_area("iDose Users (one NPI per line):", value=st.session_state.idose_contents, height=700, key='idose_text')
         st.session_state['idose_contents']['NPI'] = st.session_state['idose_contents']['NPI'].astype(int)
@@ -125,11 +124,9 @@ def modify_npi_info():
             non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...')
             if non_idose_npi and non_idose_npi != st.session_state['last_npi']: 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
-                st.session_state['last_npi'] = non_idose_npi
         with non_idose_cols[2]: 
             if st.button('Add Non iDose NPI', icon=':material/pulse_alert:'): 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
-                st.session_state['last_npi'] = non_idose_npi
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
         st.session_state['non_idose_contents']['NPI'] = st.session_state['non_idose_contents']['NPI'].astype(int)
