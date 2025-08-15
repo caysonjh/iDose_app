@@ -58,10 +58,22 @@ def get_nppes_info_for_npis(npi_list):
     
     return df 
 
+def add_npi_to_table(npi, contents_label):
+    if len(npi) != 10: 
+        st.error('NPI must be 10 characters long')
+    elif int(npi) in st.session_state['idose_contents']['NPI'].to_list(): 
+        st.error('NPI already in iDose dataset, if it was just deleted, save lists and try again')
+    elif int(npi) in st.session_state['non_idose_contents']['NPI'].to_list():
+        st.error('NPI already in Non iDose dataset, if it was just deleted, save lists and try again')
+    else:   
+        new_df = get_nppes_info_for_npis([npi])
+        st.session_state[contents_label] = pd.concat([new_df, st.session_state[contents_label]])
+        st.rerun()
+
     
 def modify_npi_info():
     st.header('Edit included NPIs for iDose and non-iDose users')
-    st.markdown('##### Columns can be deleted or added -- Ensure that all included NPIs are Type-1/Individual NPIs')
+    st.markdown('#### Columns can be deleted or added -- Ensure that all included NPIs are Type-1/Individual NPIs')
     st.markdown('##### **NOTE**: Changes will not go into effect until <Save Lists> is pressed')
     sac.divider(label='add/delete npis', icon='person-vcard', align='center', color='gray', key='npis_insert')
     
@@ -85,18 +97,11 @@ def modify_npi_info():
             st.subheader('Edit iDose:')  
         with idose_cols[1]:
             idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...')
+            if idose_npi: 
+                add_npi_to_table(idose_npi, 'idose_contents')
         with idose_cols[2]: 
             if st.button('Add iDose NPI', icon=':material/cardiology:'): 
-                if len(idose_npi) != 10: 
-                    st.error('NPI must be 10 characters long')
-                elif int(idose_npi) in st.session_state['idose_contents']['NPI'].to_list(): 
-                    st.error('NPI already in iDose dataset, if it was just deleted, save lists and try again')
-                elif int(idose_npi) in st.session_state['non_idose_contents']['NPI'].to_list():
-                    st.error('NPI already in Non iDose dataset, if it was just deleted, save lists and try again')
-                else:   
-                    newi_df = get_nppes_info_for_npis([idose_npi])
-                    st.session_state['idose_contents'] = pd.concat([newi_df, st.session_state['idose_contents']])
-                    st.rerun()
+                add_npi_to_table(idose_npi, 'idose_contents')
                 
         #new_idose_contents = st.text_area("iDose Users (one NPI per line):", value=st.session_state.idose_contents, height=700, key='idose_text')
         st.session_state['idose_contents']['NPI'] = st.session_state['idose_contents']['NPI'].astype(int)
@@ -113,20 +118,11 @@ def modify_npi_info():
             st.subheader('Edit Non iDose:')
         with non_idose_cols[1]:
             non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...')
+            if non_idose_npi: 
+                add_npi_to_table(non_idose_npi, 'non_idose_contents')
         with non_idose_cols[2]: 
             if st.button('Add Non iDose NPI', icon=':material/pulse_alert:'): 
-                if len(non_idose_npi) != 10: 
-                    st.error('NPI must be 10 characters long')
-                elif int(non_idose_npi) in st.session_state['non_idose_contents']['NPI'].to_list(): 
-                    st.error('NPI already in Non iDose dataset')
-                elif int(non_idose_npi) in st.session_state['idose_contents']['NPI'].to_list():
-                    st.error('NPI already in iDose dataset')
-                else:
-                    #st.text(st.session_state['non_idose_contents'].dtypes)
-                    #st.text(type(non_idose_npi))
-                    newn_df = get_nppes_info_for_npis([non_idose_npi])
-                    st.session_state['non_idose_contents'] = pd.concat([newn_df, st.session_state['non_idose_contents']])
-                    st.rerun()
+                add_npi_to_table(non_idose_npi, 'non_idose_contents')
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
         st.session_state['non_idose_contents']['NPI'] = st.session_state['non_idose_contents']['NPI'].astype(int)
