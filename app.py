@@ -92,7 +92,7 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
     center_header('iDose Prediction Login', 2)
     center_text('Account creation ensures that any modifications/customizations you make to the NPI lists, <br>feature sets, code groupings, ' +
                 'or model parameters will be saved when you close and revisit the app.<br> Multiple accounts can be created by the same user to enable' + 
-                'testing of various settings.')
+                'testing of various settings.<br>New users will be created with the default settings.')
     st.session_state['user_id'] = None
     st.session_state['logged_in'] = False
     
