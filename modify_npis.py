@@ -96,16 +96,13 @@ def modify_npi_info():
     col1, col_spacer, col2 = st.columns([5,0.1,5])
 
     with col1:   
-        idose_cols = st.columns(3)
+        idose_cols = st.columns(2)
         with idose_cols[0]:
             st.subheader('Edit iDose:')  
         with idose_cols[1]:
-            idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...')
+            idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...', icon=':material/cardiology:')
             if idose_npi and idose_npi != st.session_state['last_npi']: 
                 add_npi_to_table(idose_npi, 'idose_contents')          
-        with idose_cols[2]: 
-            if st.button('Add iDose NPI', icon=':material/cardiology:'): 
-                add_npi_to_table(idose_npi, 'idose_contents')
                 
         #new_idose_contents = st.text_area("iDose Users (one NPI per line):", value=st.session_state.idose_contents, height=700, key='idose_text')
         st.session_state['idose_contents']['NPI'] = st.session_state['idose_contents']['NPI'].astype(int)
@@ -117,15 +114,12 @@ def modify_npi_info():
         st.markdown("<div style='height: 570px; border-left: 2px solid lightgray; margin: 0 auto;'></div>", unsafe_allow_html=True)
 
     with col2:
-        non_idose_cols = st.columns(3)
+        non_idose_cols = st.columns(2)
         with non_idose_cols[0]:
             st.subheader('Edit Non iDose:')
         with non_idose_cols[1]:
-            non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...')
+            non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...', icon=':material/pulse_alert:')
             if non_idose_npi and non_idose_npi != st.session_state['last_npi']: 
-                add_npi_to_table(non_idose_npi, 'non_idose_contents')
-        with non_idose_cols[2]: 
-            if st.button('Add Non iDose NPI', icon=':material/pulse_alert:'): 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
