@@ -62,6 +62,7 @@ def get_nppes_info_for_npis(npi_list):
 def modify_npi_info():
     st.header('Edit included NPIs for iDose and non-iDose users')
     st.markdown('##### Columns can be deleted or added -- Ensure that all included NPIs are Type-1/Individual NPIs')
+    st.markdown('##### **NOTE**: Changes will not go into effect until <Save Lists> is pressed')
     sac.divider(label='add/delete npis', icon='person-vcard', align='center', color='gray', key='npis_insert')
     
     if 'idose_contents' not in st.session_state:
@@ -89,9 +90,9 @@ def modify_npi_info():
                 if len(idose_npi) != 10: 
                     st.error('NPI must be 10 characters long')
                 elif int(idose_npi) in st.session_state['idose_contents']['NPI'].to_list(): 
-                    st.error('NPI already in iDose dataset')
+                    st.error('NPI already in iDose dataset, if it was just deleted, save lists and try again')
                 elif int(idose_npi) in st.session_state['non_idose_contents']['NPI'].to_list():
-                    st.error('NPI already in Non iDose dataset')
+                    st.error('NPI already in Non iDose dataset, if it was just deleted, save lists and try again')
                 else:   
                     newi_df = get_nppes_info_for_npis([idose_npi])
                     st.session_state['idose_contents'] = pd.concat([newi_df, st.session_state['idose_contents']])
