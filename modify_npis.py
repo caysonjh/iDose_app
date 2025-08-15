@@ -77,6 +77,9 @@ def modify_npi_info():
     st.markdown('##### **NOTE**: Changes will not go into effect until <Save Lists> is pressed')
     sac.divider(label='add/delete npis', icon='person-vcard', align='center', color='gray', key='npis_insert')
     
+    if 'last_npi' not in st.session_state: 
+        st.session_state.last_npi = ''
+    
     if 'idose_contents' not in st.session_state:
         if os.path.exists(IDOSE_FILE):
             st.session_state.idose_contents = pd.read_csv(IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
@@ -97,12 +100,13 @@ def modify_npi_info():
             st.subheader('Edit iDose:')  
         with idose_cols[1]:
             idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...')
-            if idose_npi: 
+            if idose_npi and idose_npi != st.session_state['last_npi']: 
                 add_npi_to_table(idose_npi, 'idose_contents')
-                idose_npi = None
+                st.session_state['last_npi'] = idose_npi
         with idose_cols[2]: 
             if st.button('Add iDose NPI', icon=':material/cardiology:'): 
                 add_npi_to_table(idose_npi, 'idose_contents')
+                st.session_state['last_npi'] = idose_npi
                 
         #new_idose_contents = st.text_area("iDose Users (one NPI per line):", value=st.session_state.idose_contents, height=700, key='idose_text')
         st.session_state['idose_contents']['NPI'] = st.session_state['idose_contents']['NPI'].astype(int)
@@ -119,13 +123,13 @@ def modify_npi_info():
             st.subheader('Edit Non iDose:')
         with non_idose_cols[1]:
             non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...')
-            if non_idose_npi: 
+            if non_idose_npi and non_idose_npi != st.session_state['last_npi']: 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
-                non_idose_npi = None
+                st.session_state['last_npi'] = non_idose_npi
         with non_idose_cols[2]: 
             if st.button('Add Non iDose NPI', icon=':material/pulse_alert:'): 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
-                non_idose_npi = None
+                st.session_state['last_npi'] = non_idose_npi
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
         st.session_state['non_idose_contents']['NPI'] = st.session_state['non_idose_contents']['NPI'].astype(int)
