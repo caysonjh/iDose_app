@@ -99,6 +99,7 @@ def modify_npi_info():
             idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...')
             if idose_npi: 
                 add_npi_to_table(idose_npi, 'idose_contents')
+                idose_npi = None
         with idose_cols[2]: 
             if st.button('Add iDose NPI', icon=':material/cardiology:'): 
                 add_npi_to_table(idose_npi, 'idose_contents')
@@ -120,9 +121,11 @@ def modify_npi_info():
             non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...')
             if non_idose_npi: 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
+                non_idose_npi = None
         with non_idose_cols[2]: 
             if st.button('Add Non iDose NPI', icon=':material/pulse_alert:'): 
                 add_npi_to_table(non_idose_npi, 'non_idose_contents')
+                non_idose_npi = None
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
         st.session_state['non_idose_contents']['NPI'] = st.session_state['non_idose_contents']['NPI'].astype(int)
