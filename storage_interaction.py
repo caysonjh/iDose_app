@@ -5,6 +5,7 @@ from url_info import code_urls, drug_urls, nppes_url, MOST_UP_TO_DATE_CMS_YEAR
 import json
 import streamlit as st
 import pprint
+import pandas as pd
 
 credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
 client = storage.Client(credentials=credentials)
@@ -59,11 +60,11 @@ def load_user_environment(user_id):
             loc_update_parameters(model_parameters)
             
         if 'idose_npis' in user_settings: 
-            idose_npis = user_settings['idose_npis']
+            idose_npis = pd.DataFrame(user_settings['idose_npis'])
             loc_update_idose_npis(idose_npis)
             
         if 'non_idose_npis' in user_settings: 
-            non_idose_npis = user_settings['non_idose_npis']
+            non_idose_npis = pd.DataFrame(user_settings['non_idose_npis'])
             loc_update_non_idose_npis(non_idose_npis)
         
         if 'feature_settings' in user_settings: 
@@ -97,13 +98,11 @@ def load_full_environment():
 from load_data import IDOSE_FILE, NON_IDOSE_FILE
 
 def loc_update_idose_npis(new_idose_contents): 
-    with open(IDOSE_FILE, 'w') as f: 
-        f.write(new_idose_contents)
+    new_idose_contents.to_csv(IDOSE_FILE)
         
         
 def loc_update_non_idose_npis(new_non_idose_contents):
-    with open(NON_IDOSE_FILE, 'w') as f: 
-        f.write(new_non_idose_contents)    
+    new_non_idose_contents.to_csv(NON_IDOSE_FILE)   
         
     
 def loc_update_codes(new_feats): 

@@ -10,25 +10,13 @@ from code_groupings import new_feats
 from miscellaneous import make_progress_updater, center_header, center_text, sac_button, set_norm_button, set_cancel_button
 import streamlit_antd_components as sac
 
-IDOSE_FILE = 'idose_npis.txt'
-NON_IDOSE_FILE = 'non_idose_npis.txt'
+IDOSE_FILE = 'idose_npis.csv'
+NON_IDOSE_FILE = 'non_idose_npis.csv'
 FEATURE_CODE_FILE = 'feature_codes.txt'
 
 def update_info():
-    idose_npis = []
-    non_idose_npis = []
-    with open(IDOSE_FILE, 'r') as infile: 
-        for line in infile: 
-            if not line.strip(): 
-                continue
-            line = line.strip()
-            idose_npis.append(line)
-    with open(NON_IDOSE_FILE, 'r') as infile: 
-        for line in infile: 
-            if not line.strip(): 
-                continue
-            line = line.strip()
-            non_idose_npis.append(line)
+    idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
+    non_idose_npis = pd.read_csv(NON_IDOSE_FILE)['NPI'].to_list()
 
     train_list = idose_npis + non_idose_npis
     all_codes = list(chain.from_iterable(new_feats.values()))

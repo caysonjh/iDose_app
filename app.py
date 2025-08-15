@@ -90,6 +90,9 @@ users = load_users()
 
 if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', False): 
     center_header('iDose Prediction Login', 2)
+    center_text('Account creation ensures that any modifications/customizations you make to the NPI lists,\nfeature sets, code groupings, ' +
+                'or model parameters will be saved when you close and revisit the app.\n Multiple accounts can be created by the same user to enable' + 
+                'testing of various settings.')
     st.session_state['user_id'] = None
     st.session_state['logged_in'] = False
     
