@@ -796,8 +796,8 @@ def get_code_data_from_cms(npi_list, cpt_codes, start_year=MOST_UP_TO_DATE_CMS_Y
             out_df = npi_df[npi_df['HCPCS_Cd'].isin(cpt_codes)]
             out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].fillna(0)
             out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].fillna(0)
-            out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].round().astype(int)
-            out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].round().astype(int)
+            out_df.loc[:,'Tot_Srvcs'] = out_df['Tot_Srvcs'].astype(float).round().astype(int)
+            out_df.loc[:,'Tot_Benes'] = out_df['Tot_Benes'].astype(float).round().astype(int)
             
             out_df = out_df.groupby(['NPI','HCPCS_Cd','State','ZIP']).agg(
                 Total_Services=pd.NamedAgg(column='Tot_Srvcs', aggfunc='sum'),
