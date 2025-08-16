@@ -72,6 +72,8 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
       
     true_options = [option for option in selected_options if selected_options[option]]  
     feature_cols = [col for col in run_data.columns if any(option in col for option in true_options)] 
+    extra_time_cols = [col for col in feature_cols if any(time_feat in col for time_feat in ['Mean','Median','Standard_Deviation','Range', 'Rate_of_Change'])]
+    feature_cols = [col for col in feature_cols if col not in extra_time_cols]
     other_cols = [col for col in run_data.columns if col not in feature_cols]
     other_df = run_data[other_cols]
     
@@ -200,7 +202,7 @@ def run_mac_split():
     
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, _ = feature_selection('mac_split_explore', all_macs=False)
     feat_settings = {'beneficiaries': beneficiaries, 'services': services, 'totals':totals, 'proportions':proportions, 'no_time':no_time, 'balance_classes':balance_classes,
-                    'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state['start_year']
+                    'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state['start_year'],
     }
     
     sac.divider(label='run mac split', icon='play-btn', align='center', color='gray', key=f'mac_split_divider')
@@ -215,6 +217,9 @@ def run_mac_split():
             run_data['MAC'] = df['MAC']
             y = df[st.session_state['idose_col_name']]
             
+            feat_settings['feature_means'] = run_data.drop('MAC',axis=1).mean().to_dict()
+            feat_settings['feature_stds'] = run_data.drop('MAC',axis=1).std().to_dict()
+            
             st.text('Running model with this dataset...')   
             st.dataframe(run_data)
             
@@ -224,23 +229,23 @@ def run_mac_split():
             mac_clf_w_feats = [(mac_clf[0], mac_clf[1], {
                 'beneficiaries':beneficiaries, 'services':services, 'proportions':proportions, 'totals':totals, 'no_time':no_time, 
                 'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state.get('start_year', None)
-            }) for mac_clf in mac_clfs]
+            }, mac_clfs[2]) for mac_clf in mac_clfs]
                         
             total_dupes = 1
             if not st.session_state.get('saved_classifiers', []): 
                 st.session_state['saved_classifiers'] = []
             else:
-                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                     for _, clf_file_name in mac_clfs:
                         if f'{clf_file_name}_overwritten' in clf_name: 
                             total_dupes += 1
                 
-            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+            for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 for mac_clf in mac_clfs: 
                     if mac_clf[1] == saved_clf: 
                         backup_file = f'{saved_clf}_overwritten{total_dupes}'
                         st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != saved_clf]
-                        st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
+                        st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
             st.session_state['saved_classifiers'].extend(mac_clf_w_feats)
             
             st.markdown('##### FEATURE INFO')
@@ -285,7 +290,7 @@ def run_mac_split():
 def run_all_macs(): 
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac  = feature_selection('mac_feature_explore', all_macs=True)
     feat_settings = {'beneficiaries': beneficiaries, 'services': services, 'totals':totals, 'proportions':proportions, 'no_time':no_time, 'balance_classes':balance_classes,
-                     'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 'start_year':st.session_state['start_year']
+                     'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 'start_year':st.session_state['start_year'],
     }
     
     sac.divider(label='run all macs', icon='play-btn', align='center', color='gray', key=f'all_mac_divider')
@@ -303,8 +308,10 @@ def run_all_macs():
                 run_data_onehot = pd.concat([run_data.drop('MAC', axis=1), df_dummies], axis=1)
             y = df[st.session_state['idose_col_name']]
         
+            feat_settings['feature_means'] = run_data.mean().to_dict()
+            feat_settings['feature_stds'] = run_data.std().to_dict()
                                     
-            clf_file_name, pdf_report, web_info = run_model_all_macs(run_data_onehot, y, balance_classes, model_name, feat_settings)
+            clf_file_name, pdf_report, web_info, new_shap = run_model_all_macs(run_data_onehot, y, balance_classes, model_name, feat_settings)
             
             st.success('Model training finished!')
             
@@ -312,16 +319,16 @@ def run_all_macs():
             if not st.session_state.get('saved_classifiers', []): 
                 st.session_state['saved_classifiers'] = []
             else:
-                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                     if f'{clf_file_name}_overwritten' in clf_name: 
                         total_dupes += 1
                 
-            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+            for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == f'{saved_clf}_{mac}': 
                     backup_file = f'{saved_clf}_overwritten{total_dupes}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != f'{saved_clf}_{mac}']
-                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
-            st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings))
+                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
+            st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings, new_shap))
             
             st.markdown('##### CLASS SUMMARIES')
             st.markdown(f'###### {web_info['ALL_MACS']['CLASS_SUMMARY']}')

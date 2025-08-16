@@ -37,6 +37,8 @@ import streamlit as st
 from sklearn.ensemble import GradientBoostingClassifier 
 from sklearn.inspection import PartialDependenceDisplay
 from sklearn.base import clone
+#import lime 
+#import lime.lime_tabular 
 
 #### GLOBAL VARIABLES ####
 
@@ -1064,17 +1066,19 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         clf_file_name = f'{model_name}_{mac}.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
             num_extra = 1
-            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+            for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
             os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
         
+        shap = get_shap_explainer(clf, df)
         to_save = {
             'model':full_clf,
-            'feat_settings':feat_settings
+            'feat_settings':feat_settings,
+            'shap_explainer':shap,
         }
         joblib.dump(to_save, clf_file_name)
-        mac_clfs.append((mac, clf_file_name))
+        mac_clfs.append((mac, clf_file_name, shap))
         
         if progress_callback: 
             progress_callback(idx+1, f'Running Model For {mac}...')
@@ -1137,14 +1141,16 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         clf_file_name = f'{model_name}_ALL_MACS.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
             num_extra = 1
-            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+            for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
             os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
             
+        shap = get_shap_explainer(full_clf, X)
         to_save = {
             'model':full_clf,
-            'feat_settings':feat_settings
+            'feat_settings':feat_settings,
+            'shap_explainer':shap
         }
         joblib.dump(to_save, clf_file_name)
         
@@ -1160,7 +1166,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
     set_norm_button()
     cancel_button.empty()
             
-    return clf_file_name, pdf_file, web_info
+    return clf_file_name, pdf_file, web_info, shap
 
 
 def train_model(X, y, balance_class, model_name, mac, feat_settings): 
@@ -1181,15 +1187,31 @@ def train_model(X, y, balance_class, model_name, mac, feat_settings):
         clf_file_name = f'{model_name}_{mac}.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
             num_extra = 1
-            for _, clf_name, _ in st.session_state['saved_classifiers']: 
+            for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
             os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
         
+        shap = get_shap_explainer(clf, X)
         to_save = {
             'model':clf,
-            'feat_settings':feat_settings
+            'feat_settings':feat_settings,
+            'shap_explainer':shap
         }
         joblib.dump(to_save, clf_file_name)
         
-        return clf_file_name
+        return clf_file_name, shap
+    
+
+def get_shap_explainer(model, data): 
+    explainer = shap.TreeExplainer(model, data, model_output='probability')
+    return explainer 
+
+# def get_lime_explainer(model, data):
+#     explainer = lime.lime_tabular.LimeTabularExplainer(
+#         training_data=data.values, 
+#         feature_names=data.columns,
+#         class_names=['Non iDose', 'iDose'],
+#         mode='classification'
+#     )
+#     return explainer
