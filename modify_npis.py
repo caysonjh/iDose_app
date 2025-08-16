@@ -6,6 +6,7 @@ from storage_interaction import write_user_environment
 import pandas as pd
 from url_info import nppes_url
 import requests
+import time
 
 def parse_npi_list(text): 
     return set(x.strip() for x in text.strip().splitlines() if x.strip())
@@ -13,16 +14,18 @@ def parse_npi_list(text):
 def update_idose_npis(new_idose_contents): 
     new_idose_contents.to_csv(IDOSE_FILE)
         
-    st.session_state['idose_contents'] = new_idose_contents
+    st.session_state['idose_contents'] = new_idose_contents.copy()
     st.session_state['user_environment']['idose_npis'] = new_idose_contents.to_dict(orient='records')
     write_user_environment()
+    st.rerun()
         
 def update_non_idose_npis(new_non_idose_contents):
     new_non_idose_contents.to_csv(NON_IDOSE_FILE)  
         
-    st.session_state['non_idose_contents'] = new_non_idose_contents
+    st.session_state['non_idose_contents'] = new_non_idose_contents.copy()
     st.session_state['user_environment']['non_idose_npis'] = new_non_idose_contents.to_dict(orient='records')
     write_user_environment()
+    st.rerun()
 
 def get_nppes_info_for_npis(npi_list): 
     missing_npis = []
@@ -37,7 +40,7 @@ def get_nppes_info_for_npis(npi_list):
         
         if not json_data.get('results', []): 
             missing_npis.append(npi)
-            continue 
+            continue
         
         first_name = json_data['results'][0]['basic']['first_name']
         last_name = json_data['results'][0]['basic']['last_name']
@@ -61,16 +64,42 @@ def get_nppes_info_for_npis(npi_list):
 def add_npi_to_table(npi, contents_label):
     if len(npi) != 10: 
         st.error('NPI must be 10 characters long')
+        #time.sleep(2)
+        st.session_state['last_npi'] = npi
+        #st.rerun()
     elif int(npi) in st.session_state['idose_contents']['NPI'].to_list(): 
         st.error('NPI already in iDose dataset, if it was just deleted, save lists and try again')
+        #time.sleep(2)
+        st.session_state['last_npi'] = npi
+        #st.rerun()
     elif int(npi) in st.session_state['non_idose_contents']['NPI'].to_list():
         st.error('NPI already in Non iDose dataset, if it was just deleted, save lists and try again')
+        #time.sleep(2)
+        st.session_state['last_npi'] = npi
+        #st.rerun()
     else:   
         new_df = get_nppes_info_for_npis([npi])
-        st.session_state[contents_label] = pd.concat([new_df, st.session_state[contents_label]])
-        st.session_state['last_npi'] = npi
-        st.rerun()
+        if new_df.empty:
+            st.error('NPI not found in NPPES database')
+            #time.sleep(2)
+            st.session_state['last_npi'] = npi
+        else:
+            st.session_state[contents_label] = pd.concat([new_df, st.session_state[contents_label]])
+            st.success(f'Successfully added npi {npi}')
+            st.session_state['last_npi'] = npi
+        #st.rerun()
 
+def add_non_callback(): 
+    npi = st.session_state['new_non']
+    if npi: 
+        add_npi_to_table(npi, 'non_idose_contents')
+        st.session_state['new_non'] = ''
+
+def add_idose_callback(): 
+    npi = st.session_state['new_idose']
+    if npi: 
+        add_npi_to_table(npi, 'idose_contents')
+        st.session_state['new_idose'] = ''
     
 def modify_npi_info():
     st.header('Edit included NPIs for iDose and non-iDose users')
@@ -78,7 +107,18 @@ def modify_npi_info():
     st.markdown('##### **NOTE**: Changes will not go into effect until <Save Lists> is pressed')
     sac.divider(label='add/delete npis', icon='person-vcard', align='center', color='gray', key='npis_insert')
     
-    if 'last_npi' not in st.session_state: 
+    
+    if 'new_idose' not in st.session_state: 
+        st.session_state['new_idose'] = ''
+    if 'new_non' not in st.session_state: 
+        st.session_state['new_non'] = ''
+    
+    if 'just_saved' not in st.session_state: 
+        st.session_state['just_saved'] = False
+        
+    if st.session_state.just_saved: 
+        st.last_npi = ''
+    elif 'last_npi' not in st.session_state and not st.session_state.just_saved: 
         st.session_state.last_npi = ''
     
     if 'idose_contents' not in st.session_state:
@@ -98,14 +138,15 @@ def modify_npi_info():
     with col1:   
         idose_cols = st.columns(2)
         with idose_cols[0]:
-            st.subheader('Edit iDose:')  
+            st.subheader('Edit iDose NPI List:')  
         with idose_cols[1]:
-            idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...', icon=':material/cardiology:')
-            if idose_npi and idose_npi != st.session_state['last_npi']: 
-                add_npi_to_table(idose_npi, 'idose_contents')          
+            st.text_input('', label_visibility='collapsed', placeholder='New iDose NPI...', icon=':material/cardiology:', on_change=add_idose_callback, key='new_idose')
+            # if idose_npi and idose_npi != st.session_state['last_npi']: 
+            #     add_npi_to_table(idose_npi, 'idose_contents')          
                 
         #new_idose_contents = st.text_area("iDose Users (one NPI per line):", value=st.session_state.idose_contents, height=700, key='idose_text')
         st.session_state['idose_contents']['NPI'] = st.session_state['idose_contents']['NPI'].astype(int)
+        #st.text(st.session_state['last_npi'])
         new_idose_contents = st.data_editor(st.session_state['idose_contents'].reset_index(drop=True), num_rows='dynamic', hide_index=True, 
                                             disabled=('NPI','Name','City','State','Zip','MAC'), height=500, key='idose')
 
@@ -116,11 +157,11 @@ def modify_npi_info():
     with col2:
         non_idose_cols = st.columns(2)
         with non_idose_cols[0]:
-            st.subheader('Edit Non iDose:')
+            st.subheader('Edit Non iDose NPI List:')
         with non_idose_cols[1]:
-            non_idose_npi = st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...', icon=':material/pulse_alert:')
-            if non_idose_npi and non_idose_npi != st.session_state['last_npi']: 
-                add_npi_to_table(non_idose_npi, 'non_idose_contents')
+            st.text_input('', label_visibility='collapsed', placeholder='New Non iDose NPI...', icon=':material/pulse_alert:', on_change=add_non_callback, key='new_non')
+            # if non_idose_npi and non_idose_npi != st.session_state['last_npi']: 
+            #     add_npi_to_table(non_idose_npi, 'non_idose_contents')
                 
         #new_non_idose_contents = st.text_area("Non iDose Users (one NPI per line):", value=st.session_state.non_idose_contents, height=700, key='non_idose_text') 
         st.session_state['non_idose_contents']['NPI'] = st.session_state['non_idose_contents']['NPI'].astype(int)
@@ -128,6 +169,7 @@ def modify_npi_info():
                                                 disabled=('NPI','Name','City','State','Zip','MAC'), height=500, key='non')
     
     if st.button('Save Lists', icon=':material/patient_list:', width='stretch'): 
+        st.session_state['last_npi'] = None
         # new_idose_contents = st.session_state.idose_text
         # new_non_idose_contents = st.session_state.non_idose_text
         
@@ -143,10 +185,12 @@ def modify_npi_info():
         for npi in idose_list: 
             if len(str(npi)) != 10: 
                 errors.append(f'Error: {npi} must be 10 digits')
+                time.sleep(2)
                 st.stop()
         for npi in non_idose_list: 
             if len(str(npi)) != 10: 
                 errors.append(f'Error: {npi} must be 10 digits')
+                time.sleep(2)
                 st.stop()
         
         if overlap:

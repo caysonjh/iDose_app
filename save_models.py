@@ -71,6 +71,8 @@ def save_model():
 
 def train_all_macs(data):
     clf_file_name = None
+    new_shap = None 
+    new_lime = None
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, use_mac = feature_selection('mac_split_save', all_macs=True)
     
     sac.divider(label='train all macs', icon='play-btn', align='center', color='gray', key=f'train_all_divider')
@@ -82,42 +84,44 @@ def train_all_macs(data):
             run_data['MAC'] = data['MAC']
             df_dummies = pd.get_dummies(run_data['MAC'], dummy_na=False, drop_first=False).astype(int)
             run_data_onehot = pd.concat([run_data.drop('MAC', axis=1), df_dummies], axis=1)
-            
+        else: 
+            run_data_onehot = run_data
         y = data[st.session_state['idose_col_name']]
         
+        # st.text(feat_settings)
         feat_settings = {
             'beneficiaries':beneficiaries, 'services':services, 'proportions':proportions, 'totals':totals, 'no_time':no_time,
-            'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 'start_year':st.session_state.get('start_year', None)
+            'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':use_mac, 
+            'start_year':st.session_state.get('start_year', None), 'feature_means':run_data_onehot.mean().to_dict(), 'feature_stds':run_data_onehot.std().to_dict()
         }
-        # st.text(feat_settings)
         
         if st.button('Train and Save Model', key='train_all', width='stretch', icon=':material/train:'):
-            #st.dataframe(run_data_onehot)
-            
-            clf_file_name = train_model(run_data_onehot, y, balance_classes, model_name, 'ALL_MACS', feat_settings)
+            #st.dataframe(run_data_onehot)        
+            clf_file_name, new_shap = train_model(run_data_onehot, y, balance_classes, model_name, 'ALL_MACS', feat_settings)
                         
             total_dupes = 1
             if not st.session_state.get('saved_classifiers', []): 
                 st.session_state['saved_classifiers'] = []
             else:
-                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                     if f'{clf_file_name}_overwritten' in clf_name: 
                         total_dupes += 1
                         
-            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+            for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == saved_clf: 
                     backup_file = f'{saved_clf}_overwritten{total_dupes}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != saved_clf]
-                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
-            st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings))
+                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
+            st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings, new_shap))
 
             st.success(f'Model Saved as {clf_file_name}')
     
-    return clf_file_name, feat_settings
+    return clf_file_name, feat_settings, new_shap
 
 
 def train_mac_split(data): 
     clf_file_name = None
+    new_shap = None
     beneficiaries, services, proportions, totals, no_time, balance_classes, selected_options, ex_options, _ = feature_selection('mac_split_explore', all_macs=False)
     run_data = prep_run_data(data, beneficiaries, services, proportions, totals, no_time, selected_options, ex_options)
     run_data['MAC'] = data['MAC']
@@ -135,30 +139,31 @@ def train_mac_split(data):
         
         feat_settings = {
             'beneficiaries':beneficiaries, 'services':services, 'proportions':proportions, 'totals':totals, 'no_time':no_time,
-            'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state.get('start_year', None)
+            'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 
+            'start_year':st.session_state.get('start_year', None), 'feature_means':run_data.mean().to_dict(), 'feature_stds':run_data.std().to_dict()
         }
         
         if st.button('Train and Save Model', key='train_spl', width='stretch', icon=':material/train:'):
-            clf_file_name = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
+            clf_file_name, new_shap, new_lime = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
             
             total_dupes = 1
             if not st.session_state.get('saved_classifiers', []): 
                 st.session_state['saved_classifiers'] = []
             else:
-                for _, clf_name, _ in st.session_state['saved_classifiers']: 
+                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                     if f'{clf_file_name}_overwritten' in clf_name: 
                         total_dupes += 1
                         
-            for mac, saved_clf, saved_feat_settings in st.session_state['saved_classifiers']: 
+            for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == f'{saved_clf}_{mac}': 
                     backup_file = f'{saved_clf}_overwritten{total_dupes}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != f'{saved_clf}_{mac}']
-                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings))
-            st.session_state['saved_classifiers'].append(('_'.join(macs), clf_file_name, feat_settings))
+                    st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
+            st.session_state['saved_classifiers'].append(('_'.join(macs), clf_file_name, feat_settings, new_shap))
             
             st.success(f'Model Saved as {clf_file_name}')
 
-    return clf_file_name, feat_settings
+    return clf_file_name, feat_settings, new_shap
 
   
 def update_saved_models(): 
@@ -170,7 +175,7 @@ def update_saved_models():
         for i, mac in enumerate(macs): 
             cols[i].markdown(f'###### {mac}')
         
-        for mac, clf, feat_settings in st.session_state['saved_classifiers']:
+        for mac, clf, feat_settings, shap in st.session_state['saved_classifiers']:
             idx = np.where(macs == mac)[0][0]
             col = cols[idx]
             with open(clf, 'rb') as f: 

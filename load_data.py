@@ -206,7 +206,7 @@ def load_and_prepare_data():
             st.write('*NOTE: Regeneration will need to be run when changes are made to the npi list, or if wanting the most updated CMS versions')
             current_datetime = datetime.now()
             formatted_datetime = current_datetime.strftime("%Y%m%d_%H%M%S") 
-            st.download_button('Download Generated Data', st.session_state['generated_df'].to_csv(), f'idose_data_{formatted_datetime}.csv', 'text/csv', icon=':material/download:', width='stretch')
+            st.download_button('Download Generated Data', st.session_state['generated_df'].to_csv(), f'idose_data_startyear-{st.session_state['start_year']}_{formatted_datetime}.csv', 'text/csv', icon=':material/download:', width='stretch')
           
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='load_end')  
             
