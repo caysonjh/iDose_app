@@ -228,10 +228,6 @@ def load_and_prepare_data():
                 st.session_state['map_zips'] = info_df['Zip'].to_list()
             if 'map_dataset' not in st.session_state:
                 st.session_state['map_dataset'] = ['iDose Training Set' if st.session_state.generated_df.loc[npi][st.session_state.idose_col_name] else 'Non-iDose Training Set' for npi in st.session_state['map_npis']]
-
-
-            if 'generate_map' not in st.session_state: 
-                st.session_state['generate_map'] = True
                 
             if st.session_state['generate_map']==True or 'my_map' not in st.session_state: 
                 st.session_state['my_map'] = plot_map(st.session_state['map_npis'], st.session_state['map_names'], st.session_state['map_zips'], st.session_state['map_dataset'], show_train=True)

@@ -114,7 +114,6 @@ def add_npis(m, npis, names, zips, dataset):
     return m      
     
     
-@st.cache_resource
 def plot_map(npis, names, zips, dataset, show_train=False): 
     color_map = {'iDose Training Set':'green', 'Non-iDose Training Set':'red', 'iDose Prediction':'blue', 'Non-iDose Prediction':'orange'}
     groups = {
