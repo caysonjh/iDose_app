@@ -35,7 +35,7 @@ BACKGROUND = '#DCECFA'
 SAGE = '#8cae9c'
 
 def load_prediction(): 
-    st.header('Test Various Model Configurations and View Metrics/Feature Insights')
+    st.header('Run Prediction on New Data Using a Saved Model')
 
     selected = option_menu(None, ['Use Saved Model', 'Upload Model From File', 'Train New Model'], 
                            icons=['life-preserver', 'paperclip', 'airplane-engines'], orientation='horizontal',

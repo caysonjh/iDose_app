@@ -18,32 +18,17 @@ from storage_interaction import load_users, load_user_environment, write_users, 
 st.set_page_config(layout='wide')   
 st.logo('glaukos-corporate-logo.jpg', icon_image='glaukos-corporate-logo.jpg', size='large') 
 
-st.components.v1.html(
+st.markdown(
     """
-    <script>
-    // Modify the decoration on top to reuse as a banner
-
-    // Locate elements
-    var decoration = window.parent.document.querySelectorAll('[data-testid="stDecoration"]')[0];
-    var sidebar = window.parent.document.querySelectorAll('[data-testid="stSidebar"]')[0];
-
-    // Observe sidebar size
-    function outputsize() {
-        decoration.style.left = `${sidebar.offsetWidth}px`;
-    }
-
-    new ResizeObserver(outputsize).observe(sidebar);
-
-    // Adjust sizes
-    outputsize();
-    decoration.style.height = "5.5rem";
-    decoration.style.right = "45px";
-
-    // Adjust image decorations
-    decoration.style.backgroundImage = "url(https://core4-cms.imgix.net/s1ots_1704313288.jpg?auto=compress%2Cformat)";
-    decoration.style.backgroundSize = "contain";
-    </script>        
-    """, width=0, height=0)
+    <div style="
+        height: 8rem;
+        background: url('https://core4-cms.imgix.net/s1ots_1704313288.jpg?auto=compress%2Cformat')
+        repeat left;
+        background-size: contain;">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # center_header('iDose Prediction Model', 1)
 # st.markdown("<hr style='border: 3px solid black;'>", unsafe_allow_html=True)
