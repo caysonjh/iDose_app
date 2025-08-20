@@ -19,3 +19,7 @@ networkx==3.3
 streamlit-option-menu==0.4.0
 google-cloud-storage==3.3.0
 google-auth==2.40.3
+streamlit-folium==0.25.1
+folium==0.20.0
+stqdm==0.0.5
+streamlit-pandas-profiling==0.1.3
