@@ -12,6 +12,7 @@ from streamlit_option_menu import option_menu
 import streamlit_antd_components as sac
 from storage_interaction import write_user_environment
 import random
+from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 MAIN_COLOR = '#4682b4'
 ACCENT_COLOR = '#f28c8c'
@@ -42,7 +43,8 @@ def model_explore():
     if check_data_loaded():
         data = st.session_state.generated_df
         st.success('Data Loaded -- Ready for Training')
-        st.dataframe(data)
+        filtered_data = dataframe_explorer(data, case=False)
+        st.dataframe(data, use_container_width=True)
         
         sac.divider(label='explore models', icon='controller', align='center', color='gray')
         
@@ -241,7 +243,8 @@ def run_mac_split():
             feat_settings['feature_stds'] = run_data.drop('MAC',axis=1).std().to_dict()
             
             st.text('Running model with this dataset...')   
-            st.dataframe(run_data)
+            run_data_filtered = dataframe_explorer(run_data, case=False)
+            st.dataframe(run_data_filtered, use_container_width=True)
             
             progress_reporter = make_progress_updater(len(np.unique(run_data['MAC'])))
             

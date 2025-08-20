@@ -9,6 +9,7 @@ import pandas as pd
 import glob
 from streamlit_option_menu import option_menu
 import streamlit_antd_components as sac
+import random
 
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
@@ -109,7 +110,7 @@ def train_all_macs(data):
                         
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == saved_clf: 
-                    backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                    backup_file = f'{saved_clf}_overwritten{random.randint(0,10000)}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != saved_clf]
                     st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
             st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings, new_shap))
@@ -144,7 +145,7 @@ def train_mac_split(data):
         }
         
         if st.button('Train and Save Model', key='train_spl', width='stretch', icon=':material/train:'):
-            clf_file_name, new_shap, new_lime = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
+            clf_file_name, new_shap = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
             
             total_dupes = 1
             if not st.session_state.get('saved_classifiers', []): 

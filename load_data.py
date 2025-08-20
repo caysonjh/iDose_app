@@ -14,6 +14,7 @@ from modify_npis import get_nppes_info_for_npis
 from streamlit_pandas_profiling import st_profile_report
 from streamlit_folium import st_folium
 from ydata_profiling import ProfileReport
+from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 def update_info():
     idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
@@ -199,7 +200,8 @@ def load_and_prepare_data():
     if check_data_loaded(): 
         with col1:
             st.success('Data is loaded and ready!')
-            st.dataframe(st.session_state.generated_df)
+            filtered_df = dataframe_explorer(st.session_state.generated_df, case=False)
+            st.dataframe(filtered_df, use_container_width=True)
             
         with col_spacer:
             st.markdown("<div style='height: 500px; border-left: 1px solid lightgray; margin: 0 auto;'></div>", unsafe_allow_html=True)

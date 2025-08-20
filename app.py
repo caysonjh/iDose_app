@@ -15,7 +15,8 @@ import os
 import time
 from storage_interaction import load_users, load_user_environment, write_users, load_full_environment, load_npi_info
 
-st.set_page_config(layout='wide')    
+st.set_page_config(layout='wide')   
+st.logo('glaukos-corporate-logo.jpg', icon_image='glaukos-corporate-logo.jpg', size='large') 
 
 # center_header('iDose Prediction Model', 1)
 # st.markdown("<hr style='border: 3px solid black;'>", unsafe_allow_html=True)
@@ -171,6 +172,7 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
     
 else:
     with st.sidebar:
+        st.markdown(':red-badge[:material/warning: BETA]')
         selection = sac.menu([
             sac.MenuItem('Home', icon='house'),
             sac.MenuItem('Model Training', icon='lightbulb', children=[
@@ -190,7 +192,7 @@ else:
 
 
     if selection == 'Home': 
-        center_header('Welcome to iDose Prediction 👀 -- BETA', 2)
+        center_header('Welcome to iDose Prediction 👀', 2)
         center_text("Load data, run and test models, and make predictions on new data. For all information on each page's function, see below:")
         
         sac.divider(label='more important', icon='emoji-grin', align='center', color='gray', key='more_imp') 

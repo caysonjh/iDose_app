@@ -24,6 +24,7 @@ from modify_npis import get_nppes_info_for_npis
 from miscellaneous import plot_map, add_npis
 from streamlit_folium import st_folium
 from load_data import IDOSE_FILE, NON_IDOSE_FILE
+from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
@@ -332,7 +333,8 @@ def run_prediction():
             st.text('Data and model ready for prediction')
             st.text(f'Selected Model: {model_name}')
             #st.text(f'Feature Settings: {feat_settings}')
-            st.dataframe(data)
+            filtered_data = dataframe_explorer(data, case=False)
+            st.dataframe(filtered_data, use_container_width=True)
             sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
             
             explanation = st.toggle('Include Prediction Explanations', value=True)
@@ -359,7 +361,8 @@ def run_prediction():
                         run_data[feat] = 0
                 
                 st.text('Predicting on this dataset...')
-                st.dataframe(run_data)
+                filtered_run_data = dataframe_explorer(run_data, case=False)
+                st.dataframe(filtered_run_data, use_container_width=True)
                 
                 cancel_button = st.empty()
                 if cancel_button.button('Cancel', icon=':material/cancel:', key='pred_cancel', width='stretch'): 
@@ -413,7 +416,8 @@ def run_prediction():
                                         data=f.read(), file_name=out_filename, width='stretch')
                 with col1:
                     st.markdown('##### Predictions:')
-                    st.dataframe(out, hide_index=True)
+                    out_filtered = dataframe_explorer(out, case=False)
+                    st.dataframe(out, hide_index=True, use_container_width=True)
                    
                 with st.spinner('Generating Map...'):
                     if 'generated_df' in st.session_state: 
