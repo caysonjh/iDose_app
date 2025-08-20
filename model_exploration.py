@@ -11,11 +11,31 @@ import os
 from streamlit_option_menu import option_menu
 import streamlit_antd_components as sac
 from storage_interaction import write_user_environment
+import random
 
 MAIN_COLOR = '#4682b4'
 ACCENT_COLOR = '#f28c8c'
 BACKGROUND = '#DCECFA'
 SAGE = '#8cae9c'
+
+
+metric_helps = {
+    'METRICS':'This table highlights the performance of the model trained with 80% of the dataset on the 20% that was held out as a test set. For more information ' +
+    'on what each of the metrics mean, see [here](https://medium.com/@piyushkashyap045/understanding-precision-recall-and-f1-score-metrics-ea219b908093).', 
+    'CM_IMAGES':"This image displays a confusion matrix. The y-axis shows true labels, and the x-axis shows predicted labels. The numbers in the top left and " + 
+    "bottom right squares indicate where the model's prediction matched with the true value, so a higher concentration in those quadrants indicates better " + 
+    "performance. For more information see [here](https://www.v7labs.com/blog/confusion-matrix-guide).",
+    'PAR_DEP':"This image displays partial dependence plots. These images highlight the top 6 features that had the most importance in training the model. " + 
+    "The plot shows how the model prediction is pushed (higher towards iDose, lower away from iDose) as the feature value changes. A positive slope line would " +
+    "indicate that higher values of that feature leads to a higher liklihood of being iDose. A non-linear line indicates a complex relationship. " + 
+    "For more information see [here](https://medium.com/data-science-in-your-pocket/understanding-partial-dependence-plots-pdps-415346b7e7f1)", 
+    'SHAP_SUMMARIES':"This image shows the SHAP summary of the features. Each dot on the figure corresponds to a physician in the training set. A red dot " + 
+    "corresponds to a high value for that feature, and a blue dot corresponds to a low value for the feature. A high concentration of red dots on the left " + 
+    "side of the line indicate that having a high value for that feature makes one less likely to be predicted as an iDose user. Similarly, a high concentration " + 
+    "of red dots on the right side of the center line indicates that a higher value for that feature makes one more likely to be an iDose user. " + 
+    "For more information see [here](https://www.aidancooper.co.uk/a-non-technical-guide-to-interpreting-shap-analyses/)."
+}
+
 
 def model_explore():
     st.header('Test Various Model Configurations and View Metrics/Feature Insights')
@@ -243,7 +263,7 @@ def run_mac_split():
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 for mac_clf in mac_clfs: 
                     if mac_clf[1] == saved_clf: 
-                        backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                        backup_file = f'{saved_clf}_overwritten{random.randint(1,10000)}'
                         st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != saved_clf]
                         st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
             st.session_state['saved_classifiers'].extend(mac_clf_w_feats)
@@ -262,11 +282,13 @@ def run_mac_split():
                             continue 
                         elif metric == 'METRICS':
                             col = cols[i%3]
-                            col.markdown(f'##### {metric}')
+                            with col.popover(f'##### {metric}'):
+                                st.markdown(f'{metric_helps[metric]}')
                             col.table(web_info[mac][metric])
-                        else: 
+                        else:
                             col = cols[i%3]
-                            col.markdown(f'##### {metric}')
+                            with col.popover(f'##### {metric}'):
+                                st.markdown(f'{ metric_helps[metric]}')
                             col.image(web_info[mac][metric])
             
             
@@ -306,10 +328,12 @@ def run_all_macs():
                 run_data['MAC'] = df['MAC']
                 df_dummies = pd.get_dummies(run_data['MAC'], dummy_na=False, drop_first=False).astype(int)
                 run_data_onehot = pd.concat([run_data.drop('MAC', axis=1), df_dummies], axis=1)
+            else:
+                run_data_onehot = run_data
             y = df[st.session_state['idose_col_name']]
         
-            feat_settings['feature_means'] = run_data.mean().to_dict()
-            feat_settings['feature_stds'] = run_data.std().to_dict()
+            feat_settings['feature_means'] = run_data_onehot.mean().to_dict()
+            feat_settings['feature_stds'] = run_data_onehot.std().to_dict()
                                     
             clf_file_name, pdf_report, web_info, new_shap = run_model_all_macs(run_data_onehot, y, balance_classes, model_name, feat_settings)
             
@@ -325,7 +349,7 @@ def run_all_macs():
                 
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == f'{saved_clf}_{mac}': 
-                    backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                    backup_file = f'{saved_clf}_overwritten{random.randint(1,10000)}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != f'{saved_clf}_{mac}']
                     st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
             st.session_state['saved_classifiers'].append(('ALL_MACS', clf_file_name, feat_settings, new_shap))
@@ -343,11 +367,13 @@ def run_all_macs():
                         continue 
                     elif metric == 'METRICS':
                         col = cols[i%3]
-                        col.markdown(f'##### {metric}')
+                        with col.popover(f'##### {metric}'):
+                            st.markdown(f'{metric_helps[metric]}')
                         col.table(web_info['ALL_MACS'][metric])
                     else:
                         col = cols[i%3]
-                        col.markdown(f'##### {metric}')
+                        with col.popover(f'##### {metric}'):
+                            st.markdown(f'{ metric_helps[metric]}')
                         col.image(web_info['ALL_MACS'][metric])
             
             with st.expander('Full PDF Report'): 

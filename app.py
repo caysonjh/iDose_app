@@ -13,7 +13,7 @@ import streamlit_antd_components as sac
 import json
 import os
 import time
-from storage_interaction import load_users, load_user_environment, write_users
+from storage_interaction import load_users, load_user_environment, write_users, load_full_environment, load_npi_info
 
 st.set_page_config(layout='wide')    
 
@@ -113,6 +113,8 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
                 st.session_state['logged_in'] = True
                 st.success(f'Logged in as {user_id}')
                 load_user_environment(user_id)
+                load_full_environment()
+                load_npi_info()
                 st.rerun()
             else: 
                 st.error('Invalid user ID or password')
@@ -130,6 +132,8 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
                 st.success(f'Created account for {user_id}')
                 users[user_id] = password
                 write_users(users)
+                load_full_environment()
+                load_npi_info()
                 st.rerun()
             
     if mode == 'Reset Password': 
@@ -207,7 +211,7 @@ else:
             st.markdown("""
                 <div class="my-container">
                     <p>
-                    The Load Data page's function is to upload data used to train models. There are two primary ways to prepare data:
+                    The Load Data page's function is to upload data used to train models. There are threem, primary ways to prepare data:
                     <ol>
                         <li>Retrieve data from CMS/NPPES databases – This method uses the NPI list shown and modified under the Modify NPIs tab to automatically retrieve the data using the CMS/NPPES API.</li>
                         <li>Upload previously generated data from a different source such as Medscout – This method performs some data formatting steps to get the data in the proper form for the model, specifically retrieving things such as MAC and distance to nearest iDose user.</li>

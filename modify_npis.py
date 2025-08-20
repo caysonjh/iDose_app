@@ -2,11 +2,12 @@ import streamlit as st
 import os 
 from load_data import IDOSE_FILE, NON_IDOSE_FILE
 import streamlit_antd_components as sac
-from storage_interaction import write_user_environment
+from storage_interaction import write_user_environment, write_npi_info
 import pandas as pd
 from url_info import nppes_url
 import requests
 import time
+from stqdm import stqdm
 
 def parse_npi_list(text): 
     return set(x.strip() for x in text.strip().splitlines() if x.strip())
@@ -27,12 +28,28 @@ def update_non_idose_npis(new_non_idose_contents):
     write_user_environment()
     st.rerun()
 
-def get_nppes_info_for_npis(npi_list): 
+def get_nppes_info_for_npis(_npi_list): 
+    #st.text(st.session_state.npi_info)
+    if 'npi_info' not in st.session_state: 
+        st.session_state['npi_info'] = {}
+    generated_npi_info = st.session_state['npi_info']
+    #st.text(len(generated_npi_info))
     missing_npis = []
     state_to_mac = pd.read_csv('state_to_mac.csv').set_index('State')['MAC'].to_dict()
     df = pd.DataFrame(columns=['NPI', 'Name', 'City', 'State', 'Zip', 'MAC'])
-    for npi in npi_list:
-        #st.text(f'Getting nppes for {npi}')
+    rows = []
+    for npi in stqdm(_npi_list):
+        if npi in generated_npi_info: 
+            rows.append({
+                'NPI':npi,
+                'Name':generated_npi_info[npi]['Name'],
+                'City':generated_npi_info[npi]['City'],
+                'State':generated_npi_info[npi]['State'],
+                'Zip':generated_npi_info[npi]['Zip'],
+                'MAC':generated_npi_info[npi]['MAC'],
+            })
+            continue
+        
         get_url = nppes_url + f'&number={npi}'
         response = requests.get(get_url)
         response.raise_for_status()
@@ -47,17 +64,23 @@ def get_nppes_info_for_npis(npi_list):
         name = first_name + ' ' + last_name
         city = json_data['results'][0]['addresses'][0]['city']
         state = json_data['results'][0]['addresses'][0]['state']
-        zip = json_data['results'][0]['addresses'][0]['postal_code'][:5]
+        zipc = json_data['results'][0]['addresses'][0]['postal_code'][:5]
         mac = state_to_mac[state]
         
-        df = pd.concat([df, pd.DataFrame({
-            'NPI':[npi],
-            'Name':[name],
-            'City':[city],
-            'State':[state],
-            'Zip':[zip],
-            'MAC':[mac]
-        })])
+        new_df = {
+            'NPI':npi,
+            'Name':name,
+            'City':city,
+            'State':state,
+            'Zip':zipc,
+            'MAC':mac
+        }
+        rows.append(new_df)
+        
+    for row in rows: 
+        st.session_state['npi_info'][row['NPI']] = row
+    write_npi_info()
+    df = pd.DataFrame(rows)
     
     return df 
 

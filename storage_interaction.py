@@ -39,8 +39,7 @@ def write_user_environment():
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(f'users/{user_id}.json')
     blob.upload_from_string(json.dumps(user_settings), content_type='application/json')
-        
-      
+          
 
 def load_user_environment(user_id): 
     bucket = client.bucket(BUCKET_NAME)
@@ -79,21 +78,44 @@ def write_full_environment():
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(f'OVERARCHING_CHANGES.json')
     blob.upload_from_string(json.dumps(settings), content_type='application/json')
+
+
+def write_npi_info(): 
+    if 'npi_info' not in st.session_state: 
+        st.session_state['npi_info'] = {}
+        
+    npi_info = st.session_state['npi_info']
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(f'NPI_INFO.json')
+    blob.upload_from_string(json.dumps(npi_info), content_type='application/json')
     
 
 def load_full_environment(): 
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(f'OVERARCHING_CHANGES.json')
     
-    if blob.exists(client):
-        settings = json.loads(blob.download_as_text()) 
-        st.session_state['full_environment'] = settings
-        new_code_urls = settings['code_urls'] if 'code_urls' in st.session_state else code_urls
-        new_drug_urls = settings['drug_urls'] if 'drug_urls' in st.session_state else drug_urls
-        new_nppes_url = settings['nppes_url'] if 'nppes_url' in st.session_state else nppes_url
-        cms_year = settings['cms_year'] if 'cms_year' in st.session_state else MOST_UP_TO_DATE_CMS_YEAR
+    try: 
+        if blob.exists(client):
+            settings = json.loads(blob.download_as_text()) 
+            st.session_state['full_environment'] = settings
+            new_code_urls = settings['code_urls'] if 'code_urls' in st.session_state else code_urls
+            new_drug_urls = settings['drug_urls'] if 'drug_urls' in st.session_state else drug_urls
+            new_nppes_url = settings['nppes_url'] if 'nppes_url' in st.session_state else nppes_url
+            cms_year = settings['cms_year'] if 'cms_year' in st.session_state else MOST_UP_TO_DATE_CMS_YEAR
 
-        loc_write_urls(new_code_urls, new_drug_urls, new_nppes_url, cms_year)
+            loc_write_urls(new_code_urls, new_drug_urls, new_nppes_url, cms_year)
+    except: 
+        st.session_state['full_environment'] = {}
+        
+def load_npi_info(): 
+    bucket = client.bucket(BUCKET_NAME)
+    npi_blob = bucket.blob(f'NPI_INFO.json')
+    if npi_blob.exists(client): 
+        npi_info = json.loads(npi_blob.download_as_text())
+        st.session_state['npi_info'] = npi_info
+    
+    #st.text(st.session_state['npi_info'])
+        
 
 from load_data import IDOSE_FILE, NON_IDOSE_FILE
 

@@ -1,6 +1,6 @@
 import streamlit as st 
 import os
-from load_data import FEATURE_CODE_FILE
+from miscellaneous import FEATURE_CODE_FILE
 import streamlit_antd_components as sac
 import json
 from storage_interaction import write_user_environment

@@ -21,6 +21,9 @@ import shap
 import io
 import matplotlib.pyplot as plt
 from modify_npis import get_nppes_info_for_npis
+from miscellaneous import plot_map, add_npis
+from streamlit_folium import st_folium
+from load_data import IDOSE_FILE, NON_IDOSE_FILE
 
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
@@ -204,10 +207,10 @@ def generate_pred_data(npi_list, feat_settings):
     drug_status.empty()
     nppes_status.empty() 
     
-    idose_zips = pd.read_csv('idose_zips.csv', dtype={'ZIP':str})
+    idose_zips = pd.read_csv('idose_npis.csv', dtype={'Zip':str})
     prep_data_text = st.empty() 
     prep_data_text.text('Formatting Data...')
-    all_data = format_cms_data(all_data, feat_settings['start_year'], MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'])
+    all_data = format_cms_data(all_data, feat_settings['start_year'], MOST_UP_TO_DATE_CMS_YEAR, idose_zips['Zip'])
             
     prep_data_text.empty()
 
@@ -307,8 +310,8 @@ def run_prediction():
                             st.error('Loaded data start year does not match model start year')
                             st.stop() 
                         
-                        idose_zips = pd.read_csv('idose_zips.csv', dtype={'ZIP':str})
-                        all_data = format_uploaded_data(df, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'], upload_updater)
+                        idose_zips = pd.read_csv('idose_npis.csv', dtype={'Zip':str})
+                        all_data = format_uploaded_data(df, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['Zip'], upload_updater)
                         st.session_state['pred_data'] = all_data
                         upload_cleaner()
                         text.empty()
@@ -411,6 +414,35 @@ def run_prediction():
                 with col1:
                     st.markdown('##### Predictions:')
                     st.dataframe(out, hide_index=True)
+                   
+                with st.spinner('Generating Map...'):
+                    if 'generated_df' in st.session_state: 
+                        npis = st.session_state.generated_df.index.to_list()
+                        map_df = get_nppes_info_for_npis(npis)
+                        names = map_df['Name'].to_list()
+                        zips = map_df['Zip'].to_list()
+                        dataset = ['iDose Training Set' if idose else 'Non-iDose Training Set' for idose in st.session_state.generated_df['is_idose']]
+                    else: 
+                        idose_info = pd.read_csv(IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
+                        non_idose_info = pd.read_csv(NON_IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
+                        npis = idose_info['NPI'].to_list()  + non_idose_info['NPI'].to_list() 
+                        zips = idose_info['Zip'].to_list() + non_idose_info['Zip'].to_list()
+                        names = idose_info['Name'].to_list() + non_idose_info['Name'].to_list()
+                        dataset = ['iDose Training Set' for _ in idose_info['NPI']] + ['Non-iDose Training Set' for _ in non_idose_info['NPI']]
+                    
+                    for row in out.itertuples(): 
+                        npis.append(row.NPI)
+                        names.append(row.Name)
+                        zips.append(row.Zip)
+                        if row.Prediction == 'iDose User': 
+                            dataset.append('iDose Prediction')
+                        else: 
+                            dataset.append('Non-iDose Prediction')
+                        
+                    
+                    st.session_state['pred_map'] = plot_map(npis, names, zips, dataset, show_train=False)
+                    
+                    st_folium(st.session_state['pred_map'], width=1400, height=800, returned_objects=[])
                     
                 for npi in out['NPI']: 
                     npi_df = get_nppes_info_for_npis([npi])
@@ -420,6 +452,7 @@ def run_prediction():
                     state = npi_df['State'].to_list()[0]
                     zipcode = npi_df['Zip'].to_list()[0]
                     prediction = out[out['NPI'] == npi]['Prediction'].iloc[0]
+
                     with st.expander(f'Prediction Explanation for {npi} -- {name} -- Predicted: {prediction}'): 
                         st.markdown(f'MAC: {MAC}')
                         st.markdown(f'Location: {city}, {state} {zipcode}')
@@ -431,7 +464,14 @@ def run_prediction():
                             #st.markdown('Mean Values For Most Influential Features')
                             # st.dataframe(pd.DataFrame([feat_settings['feature_means']])[shap_feats[npi]])
 
-                            center_header('SHAP Explainer', 3) 
+                            #center_header('SHAP Explainer', 3) 
+                            with shapcol.popover('SHAP Explainer'): 
+                                st.markdown('This plot shows how the most influential features pushed the prediction for this physician to its final decision.' +
+                                            'Start at the bottom of the plot at the baseline prediction (0.5 -- 50% chance of either). As we move ' + 
+                                            'up each feature, the value of that feature pushes the user to the right or left depending, and by the ' + 
+                                            "end we are at a final decision. This essentially is the model's justification for its prediction. The table " + 
+                                            "next to the figure shows how the user's value compares to the average of the rest of the set.")
+                            
                             shaps[npi].seek(0)
                             st.image(shaps[npi])
                         with dfcol:
@@ -441,14 +481,15 @@ def run_prediction():
                             for feature in shap_feats[npi]: 
                                 feature_value = run_data[feature].loc[npi]
                                 mean_value = shap_feat_mean_df[feature].iloc[0]
-                                std = shap_feat_std_df[feature].iloc[0]
-                                if feature_value < -2*std*mean_value: 
+                                std = abs(shap_feat_std_df[feature].iloc[0])
+                                
+                                if feature_value < -2*std+mean_value: 
                                     differences.append('Significantly Lower')
-                                elif feature_value < -1*std*mean_value: 
+                                elif feature_value < -1*std+mean_value: 
                                     differences.append('Moderately Lower')
-                                elif feature_value > 2*std*mean_value: 
+                                elif feature_value > 2*std+mean_value: 
                                     differences.append('Significantly Higher')
-                                elif feature_value > std*mean_value: 
+                                elif feature_value > std+mean_value: 
                                     differences.append('Moderately Higher')
                                 elif feature_value < mean_value: 
                                     differences.append('Slightly Lower')

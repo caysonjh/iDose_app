@@ -9,10 +9,11 @@ from itertools import chain
 from code_groupings import new_feats
 from miscellaneous import make_progress_updater, center_header, center_text, sac_button, set_norm_button, set_cancel_button
 import streamlit_antd_components as sac
-
-IDOSE_FILE = 'idose_npis.csv'
-NON_IDOSE_FILE = 'non_idose_npis.csv'
-FEATURE_CODE_FILE = 'feature_codes.txt'
+from miscellaneous import plot_map, IDOSE_FILE, NON_IDOSE_FILE, FEATURE_CODE_FILE
+from modify_npis import get_nppes_info_for_npis
+from streamlit_pandas_profiling import st_profile_report
+from streamlit_folium import st_folium
+from ydata_profiling import ProfileReport
 
 def update_info():
     idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
@@ -37,6 +38,7 @@ def load_and_prepare_data():
         
         if st.button('Generate/Regenerate Data', icon=':material/database_upload:', type='primary', width='stretch'):
             st.session_state['idose_col_name'] = IDOS_VAL_COLUMN
+            st.session_state['generate_map'] = True
             
             set_cancel_button()
             cancel_button = st.empty()
@@ -140,6 +142,7 @@ def load_and_prepare_data():
             data_file = None
         
         if st.button('Load File', icon=':material/attach_file_add:', type='primary', width='stretch'):
+            st.session_state['generate_map'] = True
             if data_file is not None: 
                 filename = data_file.name.lower() 
                 try:
@@ -203,11 +206,41 @@ def load_and_prepare_data():
         
         with col2:
             st.subheader('You can download the data to avoid future generation (recommended!)')
-            st.write('*NOTE: Regeneration will need to be run when changes are made to the npi list, or if wanting the most updated CMS versions')
+            st.write('NOTE: Regeneration will need to be run when changes are made to the npi list, or if wanting the most updated CMS versions')
             current_datetime = datetime.now()
             formatted_datetime = current_datetime.strftime("%Y%m%d_%H%M%S") 
             st.download_button('Download Generated Data', st.session_state['generated_df'].to_csv(), f'idose_data_startyear-{st.session_state['start_year']}_{formatted_datetime}.csv', 'text/csv', icon=':material/download:', width='stretch')
-          
+
+        center_header('Data Map', 3)
+        
+        #pr = ProfileReport(st.session_state.generated_df, title='Data Report')
+        #st_profile_report(pr)
+        #st.dataframe(st.session_state.npi_info)
+        
+        with st.spinner('Generating Map...'):
+            if 'my_map' not in st.session_state: 
+                info_df = get_nppes_info_for_npis(st.session_state.generated_df.index)
+            if 'map_npis' not in st.session_state: 
+                st.session_state['map_npis'] = info_df['NPI'].to_list()
+            if 'map_names' not in st.session_state:
+                st.session_state['map_names'] = info_df['Name'].to_list()
+            if 'map_zips' not in st.session_state:
+                st.session_state['map_zips'] = info_df['Zip'].to_list()
+            if 'map_dataset' not in st.session_state:
+                st.session_state['map_dataset'] = ['iDose Training Set' if st.session_state.generated_df.loc[npi][st.session_state.idose_col_name] else 'Non-iDose Training Set' for npi in st.session_state['map_npis']]
+
+
+            if 'generate_map' not in st.session_state: 
+                st.session_state['generate_map'] = True
+                
+            if st.session_state['generate_map']==True or 'my_map' not in st.session_state: 
+                st.session_state['my_map'] = plot_map(st.session_state['map_npis'], st.session_state['map_names'], st.session_state['map_zips'], st.session_state['map_dataset'], show_train=True)
+                st.session_state['generate_map'] = False
+            
+            if st.session_state['my_map'] is not None:  
+                st_folium(st.session_state['my_map'], width=1400, height=800, returned_objects=[])         
+
+    
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='load_end')  
             
 def check_data_loaded():
