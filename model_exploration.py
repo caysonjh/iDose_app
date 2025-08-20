@@ -95,9 +95,12 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
     true_options = [option for option in selected_options if selected_options[option]]  
     feature_cols = [col for col in run_data.columns if any(option in col for option in true_options)] 
     extra_time_cols = [col for col in feature_cols if any(time_feat in col for time_feat in ['Mean','Median','Standard_Deviation','Range', 'Rate_of_Change'])]
+    if ex_options['Time_Features']: 
+        time_df = run_data[extra_time_cols]
     feature_cols = [col for col in feature_cols if col not in extra_time_cols]
-    other_cols = [col for col in run_data.columns if col not in feature_cols]
+    other_cols = [col for col in ex_options.keys() if ex_options[col] and col != 'Time_Features']
     other_df = run_data[other_cols]
+    run_data = run_data[feature_cols]
     
     if proportions: 
         feature_df = run_data[feature_cols].astype(float)
@@ -108,7 +111,13 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
     if totals: 
         if proportions: 
             run_data = pd.merge(run_data[feature_cols].astype(float), prop_df, left_index=True, right_index=True)
-            
+            run_data = pd.merge(run_data, other_df, left_index=True, right_index=True)
+        else: 
+            run_data = pd.merge(run_data[feature_cols], other_df, left_index=True, right_index=True)
+    
+    if ex_options['Time_Features']: 
+        run_data = pd.merge(run_data, time_df, left_index=True, right_index=True)
+          
     run_data = run_data.fillna(0)
     run_data = run_data.astype(float)
     
