@@ -13,11 +13,13 @@ import streamlit_antd_components as sac
 from storage_interaction import write_user_environment
 import random
 from streamlit_extras.dataframe_explorer import dataframe_explorer
+import streamlit_antd_components as sac
 
-MAIN_COLOR = '#4682b4'
-ACCENT_COLOR = '#f28c8c'
+
+MAIN_COLOR = '#7c8459'
+ACCENT_COLOR = '#c1941f'
 BACKGROUND = '#DCECFA'
-SAGE = '#8cae9c'
+SAGE = '#097175'
 
 
 metric_helps = {
@@ -48,14 +50,20 @@ def model_explore():
         
         sac.divider(label='explore models', icon='controller', align='center', color='gray')
         
+        mode = sac.segmented(
+            items=[
+                sac.SegmentedItem(label='Run Model and Split by MAC', icon='geo'),
+                sac.SegmentedItem(label='Run Model with MAC as Feature', icon='globe-americas'),
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+        )
         
-        mode = option_menu(None, ['Run Model and Split by MAC', 'Run Model with MAC as Feature'], 
-                            icons=['geo', 'globe-americas'], orientation='horizontal',
-                            styles={
-                                'container': {'background-color': BACKGROUND},
-                                'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-                                'nav-link': {'color': MAIN_COLOR}
-                            })        
+        # mode = option_menu(None, ['Run Model and Split by MAC', 'Run Model with MAC as Feature'], 
+        #                     icons=['geo', 'globe-americas'], orientation='horizontal',
+        #                     styles={
+        #                         'container': {'background-color': ACCENT_COLOR},
+        #                         'nav-link-selected': {'background-color': MAIN_COLOR, 'color':'#FFFFFF'},
+        #                         'nav-link': {'color': MAIN_COLOR}
+        #                     })        
 
         if mode == 'Run Model and Split by MAC':
             run_mac_split()

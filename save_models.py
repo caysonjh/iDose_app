@@ -14,10 +14,11 @@ import random
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
 
-MAIN_COLOR = '#4682b4'
-ACCENT_COLOR = '#f28c8c'
+
+MAIN_COLOR = '#7c8459'
+ACCENT_COLOR = '#c1941f'
 BACKGROUND = '#DCECFA'
-SAGE = '#8cae9c'
+SAGE = '#097175'
 
 def save_model():  
     st.header('Save a model for future prediction')
@@ -49,13 +50,20 @@ def save_model():
         st.success('Data Loaded -- Ready for Training')
         st.dataframe(data)
         
-        mac_selection = option_menu(None, ['Train and Save model for specific MAC', 'Train and Save model for all MACs'], 
-                                    icons=['geo', 'globe-americas'], orientation='horizontal',
-                                    styles={
-                                        'container': {'background-color': BACKGROUND},
-                                        'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-                                        'nav-link': {'color': MAIN_COLOR}
-                                    })
+        mac_selection = sac.segmented(
+            items=[
+                sac.SegmentedItem(label='Train and Save model for specific MAC', icon='geo'),
+                sac.SegmentedItem(label='Train and Save model for all MACs', icon='globe-americas'),
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+        )
+        
+        # mac_selection = option_menu(None, ['Train and Save model for specific MAC', 'Train and Save model for all MACs'], 
+        #                             icons=['geo', 'globe-americas'], orientation='horizontal',
+        #                             styles={
+        #                                 'container': {'background-color': BACKGROUND},
+        #                                 'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+        #                                 'nav-link': {'color': MAIN_COLOR}
+        #                             })
         
         if mac_selection == 'Train and Save model for specific MAC': 
             train_mac_split(data)

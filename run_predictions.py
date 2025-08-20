@@ -29,21 +29,30 @@ from streamlit_extras.dataframe_explorer import dataframe_explorer
 MODEL_ICONS = [':material/network_intel_node:', ':material/automation:', ':material/network_node:', ':material/graph_2:',
                ':material/schema:', ':material/graph_5:', ':material/flowsheet:', ':material/batch_prediction:']
 
-MAIN_COLOR = '#4682b4'
-ACCENT_COLOR = '#f28c8c'
+
+MAIN_COLOR = '#7c8459'
+ACCENT_COLOR = '#c1941f'
 BACKGROUND = '#DCECFA'
-SAGE = '#8cae9c'
+SAGE = '#097175'
 
 def load_prediction(): 
     st.header('Run Prediction on New Data Using a Saved Model')
 
-    selected = option_menu(None, ['Use Saved Model', 'Upload Model From File', 'Train New Model'], 
-                           icons=['life-preserver', 'paperclip', 'airplane-engines'], orientation='horizontal',
-                           styles={
-                                'container': {'background-color': BACKGROUND},
-                                'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-                                'nav-link': {'color': MAIN_COLOR}
-                            })
+    selected = sac.segmented(
+            items=[
+                sac.SegmentedItem(label='Use Saved Model', icon='life-preserver'),
+                sac.SegmentedItem(label='Upload Model From File', icon='paperclip'),
+                sac.SegmentedItem(label='Train New Model', icon='airplane-engines')
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+        )
+    
+    # selected = option_menu(None, ['Use Saved Model', 'Upload Model From File', 'Train New Model'], 
+    #                        icons=['life-preserver', 'paperclip', 'airplane-engines'], orientation='horizontal',
+    #                        styles={
+    #                             'container': {'background-color': BACKGROUND},
+    #                             'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+    #                             'nav-link': {'color': MAIN_COLOR}
+    #                         })
         
     if selected == 'Use Saved Model': 
         model_file = None
@@ -88,13 +97,20 @@ def load_prediction():
             st.success('Data Loaded -- Ready for Training')
             st.dataframe(data)
             
-            mode = option_menu(None, ['Train and Save model for specific MAC(s)', 'Train and Save model for all MACs'], 
-                                icons=['geo', 'globe-americas'], orientation='horizontal', 
-                                styles={
-                                'container': {'background-color': BACKGROUND},
-                                'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-                                'nav-link': {'color': MAIN_COLOR}
-                                })        
+            mode = sac.segmented(
+                items=[
+                    sac.SegmentedItem(label='Train and Save model for specific MAC(s)', icon='geo'),
+                    sac.SegmentedItem(label='Train and Save model for all MACs', icon='globe-americas'),
+                ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+            )
+            
+            # mode = option_menu(None, ['Train and Save model for specific MAC(s)', 'Train and Save model for all MACs'], 
+            #                     icons=['geo', 'globe-americas'], orientation='horizontal', 
+            #                     styles={
+            #                     'container': {'background-color': BACKGROUND},
+            #                     'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+            #                     'nav-link': {'color': MAIN_COLOR}
+            #                     })        
 
             if mode == 'Train and Save model for specific MAC(s)':
                 clf, feat_settings, shap = train_mac_split(data)

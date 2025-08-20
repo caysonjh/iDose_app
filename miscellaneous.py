@@ -62,12 +62,12 @@ def set_norm_button():
         div.stButton > button:first-child {
             border: 2px solid #000000; /* Outline color & thickness */
             color: #FFFFFF;             /* Text color */
-            background-color: #4682b4; /* Make it look outlined */
+            background-color: #7c8459; /* Make it look outlined */
         }
 
         /* Change hover effect */
         div.stButton > button:first-child:hover {
-            background-color: #f28c8c; 
+            background-color: #097175; 
             color: white;
             border-color: #000000;  /* Slightly darker outline on hover */
         }
@@ -82,12 +82,12 @@ def set_cancel_button():
         div.stButton > button:first-child {
             border: 2px solid #000000; /* Outline color & thickness */
             color: #FFFFFF;             /* Text color */
-            background-color: #8cae9c; /* Make it look outlined */
+            background-color: #097175; /* Make it look outlined */
         }
 
         /* Change hover effect */
         div.stButton > button:first-child:hover {
-            background-color: #f28c8c; 
+            background-color: #c1941f; 
             color: white;
             border-color: #000000;  /* Slightly darker outline on hover */
         }

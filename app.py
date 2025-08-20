@@ -33,10 +33,12 @@ st.markdown(
 # center_header('iDose Prediction Model', 1)
 # st.markdown("<hr style='border: 3px solid black;'>", unsafe_allow_html=True)
 
-MAIN_COLOR = '#4682b4'
-ACCENT_COLOR = '#f28c8c'
+MAIN_COLOR = '#7c8459'
+ACCENT_COLOR = '#c1941f'
 BACKGROUND = '#DCECFA'
-SAGE = '#8cae9c'
+SAGE = '#097175'
+
+#MAIN_COLOR = "#c3c6b5"
 
 
 st.markdown("""
@@ -45,12 +47,12 @@ st.markdown("""
     div.stDownloadButton > button {
         border: 2px solid #000000; /* Outline color & thickness */
         color: #FFFFFF;             /* Text color */
-        background-color: #f28c8c; /* Background color */
+        background-color: #c1941f; /* Background color */
     }
 
     /* Hover effect */
     div.stDownloadButton > button:hover {
-        background-color: #8cae9c; 
+        background-color: #097175; 
         color: white;
         border-color: #000000; 
     }
@@ -64,12 +66,12 @@ st.markdown("""
         border: 2px solid #000000;  /* Outer border */
         border-radius: 8px;
         padding: 5px;
-        background-color: #DCECFA;  /* Background color */
+        background-color: #c1941f;  /* Background color */
     }
 
     /* Style the actual file select button */
     div.stFileUploader button {
-        background-color: #8cae9c;
+        background-color: #097175;
         color: white;
         border: 2px solid black;
         border-radius: 5px;
@@ -77,7 +79,7 @@ st.markdown("""
 
     /* Hover effect for the button */
     div.stFileUploader button:hover {
-        background-color: #f28c8c;
+        background-color: #7c8459;
         color: white;
         border-color: #000000;
     }
@@ -87,7 +89,7 @@ st.markdown("""
 st.markdown("""
     <style>
     .my-container {
-        background-color: #cfe3d8;
+        background-color: #c3c6b5;
         padding: 20px;
         border-radius: 8px;
     }
@@ -218,7 +220,7 @@ else:
                 sac.SegmentedItem(label='Run Prediction', icon='graph-up'),
                 sac.SegmentedItem(label='Modify Feature Codes', icon='prescription'),
                 sac.SegmentedItem(label='Modify Included NPIs', icon='hospital'),
-            ], align='center', color=ACCENT_COLOR, bg_color=BACKGROUND
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
         )
         
         if desc == 'Load Data': 
@@ -337,7 +339,7 @@ else:
             items=[
                 sac.SegmentedItem(label='Modify Model Parameters', icon='sliders'),
                 sac.SegmentedItem(label='Modify CMS Urls', icon='router')  
-            ], align='center', color=ACCENT_COLOR, bg_color=BACKGROUND
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
         )
         
         if desc2 == 'Modify Model Parameters':
