@@ -264,8 +264,8 @@ def run_mac_split():
             }, mac_clfs[2]) for mac_clf in mac_clfs]
                         
             # total_dupes = 1
-            # if not st.session_state.get('saved_classifiers', []): 
-            #     st.session_state['saved_classifiers'] = []
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
             # else:
             #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
             #         for _, clf_file_name, _ in mac_clfs:
@@ -352,8 +352,8 @@ def run_all_macs():
             st.success('Model training finished!')
             
             # total_dupes = 1
-            # if not st.session_state.get('saved_classifiers', []): 
-            #     st.session_state['saved_classifiers'] = []
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
             # else:
             #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
             #         if f'{clf_file_name}_overwritten' in clf_name: 

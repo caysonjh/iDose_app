@@ -101,8 +101,8 @@ def train_all_macs(data):
             clf_file_name, new_shap = train_model(run_data_onehot, y, balance_classes, model_name, 'ALL_MACS', feat_settings)
                         
             # total_dupes = 1
-            # if not st.session_state.get('saved_classifiers', []): 
-            #     st.session_state['saved_classifiers'] = []
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
             # else:
             #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
             #         if f'{clf_file_name}_overwritten' in clf_name: 
@@ -148,8 +148,8 @@ def train_mac_split(data):
             clf_file_name, new_shap = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
             
             # total_dupes = 1
-            # if not st.session_state.get('saved_classifiers', []): 
-            #     st.session_state['saved_classifiers'] = []
+            if not st.session_state.get('saved_classifiers', []): 
+                st.session_state['saved_classifiers'] = []
             # else:
             #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
             #         if f'{clf_file_name}_overwritten' in clf_name: 
