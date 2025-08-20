@@ -107,7 +107,7 @@ def prep_run_data(df, beneficiaries, services, proportions, totals, no_time, sel
             run_data = pd.merge(prop_df, other_df, left_index=True, right_index=True)
     if totals: 
         if proportions: 
-            run_data = pd.merge(run_data, prop_df, left_index=True, right_index=True)
+            run_data = pd.merge(run_data[feature_cols].astype(float), prop_df, left_index=True, right_index=True)
             
     run_data = run_data.fillna(0)
     run_data = run_data.astype(float)
@@ -254,14 +254,14 @@ def run_mac_split():
                 'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state.get('start_year', None)
             }, mac_clfs[2]) for mac_clf in mac_clfs]
                         
-            total_dupes = 1
-            if not st.session_state.get('saved_classifiers', []): 
-                st.session_state['saved_classifiers'] = []
-            else:
-                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
-                    for _, clf_file_name in mac_clfs:
-                        if f'{clf_file_name}_overwritten' in clf_name: 
-                            total_dupes += 1
+            # total_dupes = 1
+            # if not st.session_state.get('saved_classifiers', []): 
+            #     st.session_state['saved_classifiers'] = []
+            # else:
+            #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
+            #         for _, clf_file_name, _ in mac_clfs:
+            #             if f'{clf_file_name}_overwritten' in clf_name: 
+            #                 total_dupes += 1
                 
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 for mac_clf in mac_clfs: 
@@ -342,13 +342,13 @@ def run_all_macs():
             
             st.success('Model training finished!')
             
-            total_dupes = 1
-            if not st.session_state.get('saved_classifiers', []): 
-                st.session_state['saved_classifiers'] = []
-            else:
-                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
-                    if f'{clf_file_name}_overwritten' in clf_name: 
-                        total_dupes += 1
+            # total_dupes = 1
+            # if not st.session_state.get('saved_classifiers', []): 
+            #     st.session_state['saved_classifiers'] = []
+            # else:
+            #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
+            #         if f'{clf_file_name}_overwritten' in clf_name: 
+            #             total_dupes += 1
                 
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == f'{saved_clf}_{mac}': 

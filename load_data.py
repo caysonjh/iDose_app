@@ -215,10 +215,6 @@ def load_and_prepare_data():
 
         center_header('Data Map', 3)
         
-        #pr = ProfileReport(st.session_state.generated_df, title='Data Report')
-        #st_profile_report(pr)
-        #st.dataframe(st.session_state.npi_info)
-        
         with st.spinner('Generating Map...'):
             if 'my_map' not in st.session_state: 
                 info_df = get_nppes_info_for_npis(st.session_state.generated_df.index)
@@ -236,8 +232,11 @@ def load_and_prepare_data():
                 st.session_state['generate_map'] = False
             
             if st.session_state['my_map'] is not None:  
-                st_folium(st.session_state['my_map'], width=1400, height=800, returned_objects=[])         
-
+                st_folium(st.session_state['my_map'], width=1400, height=800, returned_objects=[])       
+                
+        with st.expander('Data Report'):
+            pr = ProfileReport(st.session_state.generated_df, title='Data Report')
+            st_profile_report(pr)
     
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='load_end')  
             

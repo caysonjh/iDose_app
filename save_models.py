@@ -100,13 +100,13 @@ def train_all_macs(data):
             #st.dataframe(run_data_onehot)        
             clf_file_name, new_shap = train_model(run_data_onehot, y, balance_classes, model_name, 'ALL_MACS', feat_settings)
                         
-            total_dupes = 1
-            if not st.session_state.get('saved_classifiers', []): 
-                st.session_state['saved_classifiers'] = []
-            else:
-                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
-                    if f'{clf_file_name}_overwritten' in clf_name: 
-                        total_dupes += 1
+            # total_dupes = 1
+            # if not st.session_state.get('saved_classifiers', []): 
+            #     st.session_state['saved_classifiers'] = []
+            # else:
+            #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
+            #         if f'{clf_file_name}_overwritten' in clf_name: 
+            #             total_dupes += 1
                         
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == saved_clf: 
@@ -147,17 +147,17 @@ def train_mac_split(data):
         if st.button('Train and Save Model', key='train_spl', width='stretch', icon=':material/train:'):
             clf_file_name, new_shap = train_model(run_data, y, balance_classes, model_name, '_'.join(macs), feat_settings)
             
-            total_dupes = 1
-            if not st.session_state.get('saved_classifiers', []): 
-                st.session_state['saved_classifiers'] = []
-            else:
-                for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
-                    if f'{clf_file_name}_overwritten' in clf_name: 
-                        total_dupes += 1
+            # total_dupes = 1
+            # if not st.session_state.get('saved_classifiers', []): 
+            #     st.session_state['saved_classifiers'] = []
+            # else:
+            #     for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
+            #         if f'{clf_file_name}_overwritten' in clf_name: 
+            #             total_dupes += 1
                         
             for mac, saved_clf, saved_feat_settings, shap in st.session_state['saved_classifiers']: 
                 if clf_file_name == f'{saved_clf}_{mac}': 
-                    backup_file = f'{saved_clf}_overwritten{total_dupes}'
+                    backup_file = f'{saved_clf}_overwritten{random.randint(1,10000)}'
                     st.session_state['saved_classifiers'] = [vals for vals in st.session_state['saved_classifiers'] if vals[1] != f'{saved_clf}_{mac}']
                     st.session_state['saved_classifiers'].append((mac, backup_file, saved_feat_settings, shap))
             st.session_state['saved_classifiers'].append(('_'.join(macs), clf_file_name, feat_settings, new_shap))
