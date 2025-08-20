@@ -111,13 +111,22 @@ if 'logged_in' not in st.session_state or not st.session_state.get('logged_in', 
     st.session_state['user_id'] = None
     st.session_state['logged_in'] = False
     
-    mode = option_menu(None, ['Login', 'Create User', 'Reset Password', 'Delete User'], 
-                    icons=['door-open', 'person-badge', 'key', 'trash'], orientation='horizontal',
-                    styles={
-                        'container': {'background-color': BACKGROUND},
-                        'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-                        'nav-link': {'color': MAIN_COLOR}
-                    })   
+    mode = sac.segmented(
+            items=[
+                sac.SegmentedItem(label='Login', icon='door-open'),
+                sac.SegmentedItem(label='Create User', icon='person-badge'),
+                sac.SegmentedItem(label='Reset Password', icon='key'),
+                sac.SegmentedItem(label='Delete User', icon='trash'),
+            ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+        )
+    
+    # mode = option_menu(None, ['Login', 'Create User', 'Reset Password', 'Delete User'], 
+    #                 icons=['door-open', 'person-badge', 'key', 'trash'], orientation='horizontal',
+    #                 styles={
+    #                     'container': {'background-color': BACKGROUND},
+    #                     'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+    #                     'nav-link': {'color': MAIN_COLOR}
+    #                 })   
     
     if mode == 'Login':
         user_id = st.text_input('User ID')
