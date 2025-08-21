@@ -42,7 +42,6 @@ def load_prediction():
             items=[
                 sac.SegmentedItem(label='Use Saved Model', icon='life-preserver'),
                 sac.SegmentedItem(label='Upload Model From File', icon='paperclip'),
-                sac.SegmentedItem(label='Train New Model', icon='airplane-engines')
             ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
         )
     
@@ -89,42 +88,42 @@ def load_prediction():
             sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic3')
             run_prediction()
     
-    if selected == 'Train New Model': 
-        if check_data_loaded(): 
-            st.subheader('Train and save a new model')
+    # if selected == 'Train New Model': 
+    #     if check_data_loaded(): 
+    #         st.subheader('Train and save a new model')
             
-            data = st.session_state['generated_df']
-            st.success('Data Loaded -- Ready for Training')
-            st.dataframe(data)
+    #         data = st.session_state['generated_df']
+    #         st.success('Data Loaded -- Ready for Training')
+    #         st.dataframe(data)
             
-            mode = sac.segmented(
-                items=[
-                    sac.SegmentedItem(label='Train and Save model for specific MAC(s)', icon='geo'),
-                    sac.SegmentedItem(label='Train and Save model for all MACs', icon='globe-americas'),
-                ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
-            )
+    #         mode = sac.segmented(
+    #             items=[
+    #                 sac.SegmentedItem(label='Train and Save model for specific MAC(s)', icon='geo'),
+    #                 sac.SegmentedItem(label='Train and Save model for all MACs', icon='globe-americas'),
+    #             ], align='center', color=ACCENT_COLOR, bg_color=MAIN_COLOR
+    #         )
             
-            # mode = option_menu(None, ['Train and Save model for specific MAC(s)', 'Train and Save model for all MACs'], 
-            #                     icons=['geo', 'globe-americas'], orientation='horizontal', 
-            #                     styles={
-            #                     'container': {'background-color': BACKGROUND},
-            #                     'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
-            #                     'nav-link': {'color': MAIN_COLOR}
-            #                     })        
+    #         # mode = option_menu(None, ['Train and Save model for specific MAC(s)', 'Train and Save model for all MACs'], 
+    #         #                     icons=['geo', 'globe-americas'], orientation='horizontal', 
+    #         #                     styles={
+    #         #                     'container': {'background-color': BACKGROUND},
+    #         #                     'nav-link-selected': {'background-color': SAGE, 'color':'#FFFFFF'},
+    #         #                     'nav-link': {'color': MAIN_COLOR}
+    #         #                     })        
 
-            if mode == 'Train and Save model for specific MAC(s)':
-                clf, feat_settings, shap = train_mac_split(data)
-            elif mode == 'Train and Save model for all MACs':
-                clf, feat_settings, shap = train_all_macs(data)
-            else: 
-                clf, feat_settings, shap = None, None, None
+    #         if mode == 'Train and Save model for specific MAC(s)':
+    #             clf, feat_settings, shap = train_mac_split(data)
+    #         elif mode == 'Train and Save model for all MACs':
+    #             clf, feat_settings, shap = train_all_macs(data)
+    #         else: 
+    #             clf, feat_settings, shap = None, None, None
 
-            if clf is not None:
-                st.session_state['predict_model'] = (clf, joblib.load(clf), feat_settings, shap)
-                sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic4')
-                run_prediction()
-        else: 
-            st.error('Data must be loaded first')
+    #         if clf is not None:
+    #             st.session_state['predict_model'] = (clf, joblib.load(clf), feat_settings, shap)
+    #             sac.divider(label='generate prediction data', icon='boxes', align='center', color='gray', key='magic4')
+    #             run_prediction()
+    #     else: 
+    #         st.error('Data must be loaded first')
             
     #sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
     if 'pred_data' not in st.session_state:
@@ -349,8 +348,8 @@ def run_prediction():
             st.text('Data and model ready for prediction')
             st.text(f'Selected Model: {model_name}')
             #st.text(f'Feature Settings: {feat_settings}')
-            filtered_data = dataframe_explorer(data, case=False)
-            st.dataframe(filtered_data, use_container_width=True)
+            #filtered_data = dataframe_explorer(data, case=False)
+            st.dataframe(data, use_container_width=True)
             sac.divider(label='run prediction', icon='magic', align='center', color='gray', key='magig1')
             
             explanation = st.toggle('Include Prediction Explanations', value=True)
@@ -377,8 +376,8 @@ def run_prediction():
                         run_data[feat] = 0
                 
                 st.text('Predicting on this dataset...')
-                filtered_run_data = dataframe_explorer(run_data, case=False)
-                st.dataframe(filtered_run_data, use_container_width=True)
+                #filtered_run_data = dataframe_explorer(run_data, case=False)
+                st.dataframe(run_data, use_container_width=True)
                 
                 cancel_button = st.empty()
                 if cancel_button.button('Cancel', icon=':material/cancel:', key='pred_cancel', width='stretch'): 

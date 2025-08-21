@@ -234,9 +234,9 @@ def load_and_prepare_data():
             if st.session_state['my_map'] is not None:  
                 st_folium(st.session_state['my_map'], width=1400, height=800, returned_objects=[])       
                 
-        with st.expander('Data Report'):
-            pr = ProfileReport(st.session_state.generated_df, title='Data Report')
-            st_profile_report(pr)
+        # with st.expander('Data Report'):
+        #     pr = ProfileReport(st.session_state.generated_df, title='Data Report')
+        #     st_profile_report(pr)
     
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='load_end')  
             
