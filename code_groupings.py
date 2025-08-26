@@ -14,13 +14,14 @@ new_feats = {
     "GONIOTOMY" : ['65820'],
     "SHUNT" : ['66179', '66180'],
     "EXTERNAL_DRAIN_DEV" : ['66183'],
-    "TRABS" : ['66174', '66170', '66172'],
-    "MIGS" : ['0671T', '0449T', '0450T'],
+    "TRABS" : ['66170', '66172', '65850'],
+    "CANALOPLASTY" : ['66174'],
+    "XEN": ['0449T'],
+    "MIGS" : ['0671T', '0450T'],
     "CATARACTS" : ['66984', '66982', '66988', '66987'],
     "LASER_PROCEDURES" : ['65855', '66711', '66761', '66762'],
     "COMBO_CAT" : ['66991', '66989'],
-    "CONVENTIONAL_PROCEDURES" : ['65850'],
-    "GENERAL_PROCEDURES" : ['66999'],
+    "UNLISTED_PROCEDURES" : ['66999'],
     "RETINAL_PROCEDURES" : ['67208', '67210', '67218', '67220', '67221', '67225', '67227', '67228', '67229'],
 
     #PRESCRIPTIONS
