@@ -22,8 +22,8 @@ def update_info():
 
     train_list = idose_npis + non_idose_npis
     all_codes = list(chain.from_iterable(new_feats.values()))
-    cpt_codes = [code for code in all_codes if not code[-1].isalpha()]
-    drug_list = [drug for drug in all_codes if drug[-1].isalpha() and drug[0].isalpha()]
+    cpt_codes = [code for code in all_codes if any(let.isnumeric() for let in code)]
+    drug_list = [drug for drug in all_codes if drug not in cpt_codes]
     
     return train_list, cpt_codes, drug_list, idose_npis
 
