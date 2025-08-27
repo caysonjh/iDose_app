@@ -17,15 +17,20 @@ from ydata_profiling import ProfileReport
 from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 def update_info():
-    idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
+    #idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
     non_idose_npis = pd.read_csv(NON_IDOSE_FILE)['NPI'].to_list()
-
+    superstars = pd.read_csv('superstars.csv', dtype={'NPI':str})['NPI'].to_list() 
+    runners = pd.read_csv('running.csv', dtype={'NPI':str})['NPI'].to_list() 
+    walkers = pd.read_csv('walking.csv', dtype={'NPI':str})['NPI'].to_list() 
+    crawlers = pd.read_csv('crawling.csv', dtype={'NPI':str})['NPI'].to_list() 
+    idose_npis = superstars + runners + walkers + crawlers
+    
     train_list = idose_npis + non_idose_npis
     all_codes = list(chain.from_iterable(new_feats.values()))
     cpt_codes = [code for code in all_codes if not code[-1].isalpha()]
     drug_list = [drug for drug in all_codes if drug[-1].isalpha() and drug[0].isalpha()]
     
-    return train_list, cpt_codes, drug_list, idose_npis
+    return train_list, cpt_codes, drug_list, idose_npis, superstars, runners, walkers, crawlers
 
 
 def load_and_prepare_data():
@@ -47,7 +52,7 @@ def load_and_prepare_data():
                 st.stop()
             
             
-            train_list, cpt_codes, drug_list, idose_npis = update_info()
+            train_list, cpt_codes, drug_list, idose_npis, superstars, runners, walkers, crawlers = update_info()
             
             progress_updater, progress_cleaner = make_progress_updater(len(train_list)*3)
             
@@ -79,7 +84,18 @@ def load_and_prepare_data():
             all_data = pd.merge(df_temp, df3, on=['NPI'])
             all_data = all_data[all_data['NPI'].isin(train_list)]
             
-            is_idose = [True if npi in idose_npis else False for npi in all_data['NPI']]
+            # is_idose = [True if npi in idose_npis else False for npi in all_data['NPI']]
+            is_idose = []
+            for npi in all_data['NPI'].to_list(): 
+                if npi in superstars: 
+                    is_idose.append('Superstar')
+                elif npi in runners: 
+                    is_idose.append('Runner')
+                elif npi in walkers: 
+                    is_idose.append('Walker')
+                elif npi in crawlers: 
+                    is_idose.append('Crawler')
+                    
             all_data[IDOS_VAL_COLUMN] = is_idose
             
             cpt_status.empty()
@@ -225,7 +241,8 @@ def load_and_prepare_data():
             if 'map_zips' not in st.session_state:
                 st.session_state['map_zips'] = info_df['Zip'].to_list()
             if 'map_dataset' not in st.session_state:
-                st.session_state['map_dataset'] = ['iDose Training Set' if st.session_state.generated_df.loc[npi][st.session_state.idose_col_name] else 'Non-iDose Training Set' for npi in st.session_state['map_npis']]
+                #st.session_state['map_dataset'] = ['iDose Training Set' if st.session_state.generated_df.loc[npi][st.session_state.idose_col_name] else 'Non-iDose Training Set' for npi in st.session_state['map_npis']]
+                st.session_state['map_dataset'] = st.session_state.generated_df[IDOS_VAL_COLUMN]
                 
             if st.session_state['generate_map']==True or 'my_map' not in st.session_state: 
                 st.session_state['my_map'] = plot_map(st.session_state['map_npis'], st.session_state['map_names'], st.session_state['map_zips'], st.session_state['map_dataset'], show_train=True)
