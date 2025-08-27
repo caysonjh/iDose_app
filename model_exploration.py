@@ -354,7 +354,8 @@ def run_all_macs():
         
             feat_settings['feature_means'] = run_data_onehot.mean().to_dict()
             feat_settings['feature_stds'] = run_data_onehot.std().to_dict()
-                                    
+            
+            #st.dataframe(y)                        
             clf_file_name, pdf_report, web_info, new_shap = run_model_all_macs(run_data_onehot, y, balance_classes, model_name, feat_settings)
             
             st.success('Model training finished!')

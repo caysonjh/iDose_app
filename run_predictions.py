@@ -387,8 +387,8 @@ def run_prediction():
                 run_data = run_data.loc[:, model.feature_names_in_]
                 
                 predictions = model.predict(run_data)
-                probs = model.predict_proba(run_data)
-                pred_class_props = probs.max(axis=1)
+                #probs = model.predict_proba(run_data)
+                #pred_class_props = probs.max(axis=1)
                 
                 shaps = {}
                 #limes = {}
@@ -405,10 +405,10 @@ def run_prediction():
                                 all_data[feature] = np.random.normal(loc=feat_means[feature], scale=feat_stds[feature], size=200)
                     #limes = lime_explainer(model, run_data, all_data)            
                     
-                run_data['Prediction'] = ['iDose User' if pred == True else 'Non iDose User' for pred in predictions]
-                run_data['Confidence'] = [str(round(prop*100, 2))+'%' for prop in pred_class_props]
+                run_data['Prediction'] = predictions
+                #run_data['Confidence'] = [str(round(prop*100, 2))+'%' for prop in pred_class_props]
                 
-                out = run_data.sort_values(by=['Prediction', 'Confidence'], ascending=[False, False])
+                out = run_data.sort_values(by=['Prediction'], ascending=[False])
                 out['NPI'] = out.index
                 info_df = get_nppes_info_for_npis(out['NPI'])
                 out['Name'] = info_df['Name'].values
@@ -417,7 +417,7 @@ def run_prediction():
                 out['Zip'] = info_df['Zip'].values
                 out['MAC'] = info_df['MAC'].values
                 
-                out = out[['NPI', 'Name', 'Prediction', 'Confidence', 'MAC', 'City', 'State', 'Zip']].reset_index(drop=True)
+                out = out[['NPI', 'Name', 'Prediction', 'MAC', 'City', 'State', 'Zip']].reset_index(drop=True)
                 current_datetime = datetime.now()
                 formatted_datetime = current_datetime.strftime("%Y%m%d_%H%M%S")
 
@@ -440,23 +440,27 @@ def run_prediction():
                         map_df = get_nppes_info_for_npis(npis)
                         names = map_df['Name'].to_list()
                         zips = map_df['Zip'].to_list()
-                        dataset = ['iDose Training Set' if idose else 'Non-iDose Training Set' for idose in st.session_state.generated_df['is_idose']]
+                        #dataset = ['iDose Training Set' if idose else 'Non-iDose Training Set' for idose in st.session_state.generated_df['is_idose']]
+                        dataset = st.session_state.generated_df['is_idose'].to_list()
                     else: 
-                        idose_info = pd.read_csv(IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
-                        non_idose_info = pd.read_csv(NON_IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
-                        npis = idose_info['NPI'].to_list()  + non_idose_info['NPI'].to_list() 
-                        zips = idose_info['Zip'].to_list() + non_idose_info['Zip'].to_list()
-                        names = idose_info['Name'].to_list() + non_idose_info['Name'].to_list()
-                        dataset = ['iDose Training Set' for _ in idose_info['NPI']] + ['Non-iDose Training Set' for _ in non_idose_info['NPI']]
+                        # idose_info = pd.read_csv(IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
+                        # non_idose_info = pd.read_csv(NON_IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
+                        # npis = idose_info['NPI'].to_list()  + non_idose_info['NPI'].to_list() 
+                        # zips = idose_info['Zip'].to_list() + non_idose_info['Zip'].to_list()
+                        # names = idose_info['Name'].to_list() + non_idose_info['Name'].to_list()
+                        # # dataset = ['iDose Training Set' for _ in idose_info['NPI']] + ['Non-iDose Training Set' for _ in non_idose_info['NPI']]
+                        # dataset = [0 for _ in npis]
+                        pass
                     
                     for row in out.itertuples(): 
                         npis.append(row.NPI)
                         names.append(row.Name)
                         zips.append(row.Zip)
-                        if row.Prediction == 'iDose User': 
-                            dataset.append('iDose Prediction')
-                        else: 
-                            dataset.append('Non-iDose Prediction')
+                        dataset.append(row.Prediction)
+                        # if row.Prediction == 'iDose User': 
+                        #     dataset.append('iDose Prediction')
+                        # else: 
+                        #     dataset.append('Non-iDose Prediction')
                         
                     
                     st.session_state['pred_map'] = plot_map(npis, names, zips, dataset, show_train=False)
