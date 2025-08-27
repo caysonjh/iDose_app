@@ -131,29 +131,33 @@ def load_prediction():
     sac.divider(label='end', icon='sign-dead-end', align='center', color='gray', key='split_end')
 
 
-def shap_explainer(explainer, pred_data): 
+def shap_explainer(explainer, pred_data, predictions): 
     pred_shap_images = {npi:None for npi in pred_data.index}
     top_features = {npi:None for npi in pred_data.index}
     top_vals = {npi:None for npi in pred_data.index}
+    i = 0
     for npi, npi_df in pred_data.iterrows():
+        prediction = predictions[i]
+        st.text(prediction)
         row_df = npi_df.to_frame().T
         shap_values = explainer(row_df)
         
         shap_for_class = shap_values.values[0]
         top_idx = np.argsort(np.abs(shap_for_class))[::-1]
         N = 10
-        top_feats = pred_data.columns[top_idx[:N]].to_list()
+        top_feats = pred_data.columns[top_idx.ravel()[:N]].to_list()
         top_vs = row_df[top_feats].iloc[0].to_list()
         top_features[npi] = top_feats 
         top_vals[npi] = top_vs
         
         shap_buf = io.BytesIO()
-        shap.plots.waterfall(shap_values[0], show=False)
+        shap.plots.waterfall(shap_values[0, :, prediction], show=False)
         plt.savefig(shap_buf, format='png', bbox_inches='tight')
         plt.close()
         shap_buf.seek(0)
         
         pred_shap_images[npi] = shap_buf
+        i += 1
     
     return pred_shap_images, top_features, top_vals
 
@@ -190,7 +194,7 @@ def generate_pred_data(npi_list, feat_settings):
     if cancel_button.button('Cancel', icon=':material/cancel:', width='stretch'):
         st.stop()
         
-    train_list, cpt_codes, drug_list, idose_npis = update_info()
+    train_list, cpt_codes, drug_list, idose_npis, superstars, runners, walkers, crawlers = update_info()
     
     progress_updater, progress_cleaner = make_progress_updater(len(npi_list)*3)
     
@@ -393,7 +397,7 @@ def run_prediction():
                 shaps = {}
                 #limes = {}
                 if explanation: 
-                    shaps, shap_feats, shap_vals = shap_explainer(shap, run_data)
+                    shaps, shap_feats, shap_vals = shap_explainer(shap, run_data, predictions)
                     if 'generated_df' in st.session_state and all(feat in st.session_state['generated_df'] for feat in run_data.columns): 
                         all_data = st.session_state['generated_df'][all_data.columns.to_list()]                    
                     else: 
@@ -405,7 +409,8 @@ def run_prediction():
                                 all_data[feature] = np.random.normal(loc=feat_means[feature], scale=feat_stds[feature], size=200)
                     #limes = lime_explainer(model, run_data, all_data)            
                     
-                run_data['Prediction'] = ['iDose User' if pred == True else 'Non iDose User' for pred in predictions]
+                prd_map = {0:'Non-iDose',1:'Crawler',2:'Walker',3:'Runner',4:'Superstar'}
+                run_data['Prediction'] = [prd_map[p] for p in predictions]
                 run_data['Confidence'] = [str(round(prop*100, 2))+'%' for prop in pred_class_props]
                 
                 out = run_data.sort_values(by=['Prediction', 'Confidence'], ascending=[False, False])
@@ -440,23 +445,21 @@ def run_prediction():
                         map_df = get_nppes_info_for_npis(npis)
                         names = map_df['Name'].to_list()
                         zips = map_df['Zip'].to_list()
-                        dataset = ['iDose Training Set' if idose else 'Non-iDose Training Set' for idose in st.session_state.generated_df['is_idose']]
+                        #dataset = ['iDose Training Set' if idose else 'Non-iDose Training Set' for idose in st.session_state.generated_df['is_idose']]
+                        dataset = st.session_state.generated_df['is_idose'].to_list()
                     else: 
                         idose_info = pd.read_csv(IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
                         non_idose_info = pd.read_csv(NON_IDOSE_FILE, index_col=0, dtype={'Zip':str}).reset_index(drop=True)
                         npis = idose_info['NPI'].to_list()  + non_idose_info['NPI'].to_list() 
                         zips = idose_info['Zip'].to_list() + non_idose_info['Zip'].to_list()
                         names = idose_info['Name'].to_list() + non_idose_info['Name'].to_list()
-                        dataset = ['iDose Training Set' for _ in idose_info['NPI']] + ['Non-iDose Training Set' for _ in non_idose_info['NPI']]
+                        #dataset = ['iDose Training Set' for _ in idose_info['NPI']] + ['Non-iDose Training Set' for _ in non_idose_info['NPI']]
                     
                     for row in out.itertuples(): 
                         npis.append(row.NPI)
                         names.append(row.Name)
                         zips.append(row.Zip)
-                        if row.Prediction == 'iDose User': 
-                            dataset.append('iDose Prediction')
-                        else: 
-                            dataset.append('Non-iDose Prediction')
+                        dataset.append(row.Prediction)
                         
                     
                     st.session_state['pred_map'] = plot_map(npis, names, zips, dataset, show_train=False)

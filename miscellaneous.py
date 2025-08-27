@@ -114,14 +114,47 @@ def add_npis(m, npis, names, zips, dataset):
     return m      
     
     
+# def float_to_colormap_rgb(value, colormap_name='viridis'):
+#     """Converts a float (0.0-1.0) to an RGB tuple using a colormap."""
+#     # cmap = cm.get_cmap(colormap_name)
+#     # rgba = cmap(value)  # Returns RGBA tuple (0.0-1.0)
+#     # rgb_255 = tuple(int(c * 255) for c in rgba[:3])
+#     # #st.text(rgb_255)
+#     rgb_255 = 'green' if not value.is_integer() else 'red'
+#     if value == 0 or value == np.nan or value < 0.1: 
+#         rgb_255 = 'red'
+    
+#     return rgb_255
+    
 def plot_map(npis, names, zips, dataset, show_train=False): 
-    color_map = {'iDose Training Set':'green', 'Non-iDose Training Set':'red', 'iDose Prediction':'blue', 'Non-iDose Prediction':'orange'}
+    color_map = {
+        'Superstar':'lightblue', 
+        'Runner':'green',
+        'Walker':'purple',
+        'Crawler':'darkblue',
+        'Non-iDose':'red', 
+        'Superstar Prediction':'pink', 
+        'Runner Prediction':'blue',
+        'Walker Prediction':'darkblue',
+        'Crawler Prediction':'orange',
+        'Non-iDose Prediction':'gray'
+    }
     groups = {
-        'iDose Training Set':folium.FeatureGroup(name='iDose Training Set', overlay=True, show=show_train),
-        'Non-iDose Training Set':folium.FeatureGroup(name='Non-iDose Training Set', overlay=True, show=show_train), 
-        'iDose Prediction':folium.FeatureGroup(name='iDose Prediction', overlay=True), 
+        'Superstar':folium.FeatureGroup(name='Superstar Training Set', overlay=True, show=show_train),
+        'Runner':folium.FeatureGroup(name='Runner Training Set', overlay=True, show=show_train),
+        'Walker':folium.FeatureGroup(name='Walker Training Set', overlay=True, show=show_train),
+        'Crawler':folium.FeatureGroup(name='Crawler Training Set', overlay=True, show=show_train),
+        'Non-iDose':folium.FeatureGroup(name='Non-iDose Training Set', overlay=True, show=show_train), 
+        'Superstar Prediction':folium.FeatureGroup(name='Superstar Prediction', overlay=True), 
+        'Runner Prediction':folium.FeatureGroup(name='Runner Prediction', overlay=True),
+        'Walker Prediction':folium.FeatureGroup(name='Walker Prediction', overlay=True),
+        'Crawler Prediction':folium.FeatureGroup(name='Crawler Prediction', overlay=True),
         'Non-iDose Prediction':folium.FeatureGroup(name='Non-iDose Prediction', overlay=True)
     }
+    groups = {data:folium.FeatureGroup(name=data, overlay=True) for data in dataset}
+    #st.text(dataset)
+    #st.text(dataset)
+    #norm_data = [(val - min(dataset)) / (max(dataset) - min(dataset)) for val in dataset]
     
     nomi = pgeocode.Nominatim('us')
     locations = nomi.query_postal_code(zips)
@@ -157,12 +190,15 @@ def plot_map(npis, names, zips, dataset, show_train=False):
     legend_html = '''
         <div style="
         position: fixed;
-        bottom: 50px; left: 50px; width: 220px; height: 180px;
+        bottom: 50px; left: 50px; width: 220px; height: 250px;
         border:2px solid grey; z-index:9999; font-size:14px;
         background-color:whtie; padding: 10px; 
         ">
         <b>Dataset Key</b><br>
-        <i class="fa fa-map-marker fa-2x" style="color:green"></i> iDose Training Set<br>
+        <i class="fa fa-map-marker fa-2x" style="color:lightblue"></i> Superstar Training Set<br>
+        <i class="fa fa-map-marker fa-2x" style="color:green"></i> Runner Training Set<br>
+        <i class="fa fa-map-marker fa-2x" style="color:purple"></i> Walker Training Set<br>
+        <i class="fa fa-map-marker fa-2x" style="color:darkblue"></i> Crawler Training Set<br>
         <i class="fa fa-map-marker fa-2x" style="color:red"></i> Non-iDose Training Set<br>
         <i class="fa fa-map-marker fa-2x" style="color:blue"></i> iDose Prediction<br>
         <i class="fa fa-map-marker fa-2x" style="color:orange"></i> Non-iDose Prediction

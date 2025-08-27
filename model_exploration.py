@@ -215,8 +215,9 @@ def feature_selection(key_header, all_macs):
                 ex_options[ex] = True
         st.markdown("<br>", unsafe_allow_html=True)
     
-        st.markdown('##### Model Options:')
-        balance_classes = st.toggle('Oversample the under represented class to balance the two classes and get better predictions', value=True, key=f'{key_header}_balance')
+        #st.markdown('##### Model Options:')
+        #balance_classes = st.toggle('Oversample the under represented class to balance the two classes and get better predictions', value=True, key=f'{key_header}_balance')
+        balance_classes = False
         st.markdown("<br>", unsafe_allow_html=True)
         
         if all_macs: 

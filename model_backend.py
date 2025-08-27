@@ -35,6 +35,7 @@ from url_info import code_urls, drug_urls, MOST_UP_TO_DATE_CMS_YEAR, nppes_url
 from model_parameters import XGB_PARAMS
 import streamlit as st
 from sklearn.ensemble import GradientBoostingClassifier 
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import PartialDependenceDisplay
 from sklearn.base import clone
 #import lime 
@@ -342,10 +343,10 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
                 
         #web_info[mac] = {}
         
-        if balance_class: 
-            if (y_val == 1).sum() >= 8 and (y_val == 0).sum() >= 8:
-                X_val, y_val = balance_classes(X_val, y_val)
-            X_full, y_full = balance_classes(X_full, y_full)
+        # if balance_class: 
+        #     if (y_val == 1).sum() >= 8 and (y_val == 0).sum() >= 8:
+        #         X_val, y_val = balance_classes(X_val, y_val)
+        #     X_full, y_full = balance_classes(X_full, y_full)
                 
         macs.append(mac)
     
@@ -355,16 +356,17 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         y_proba = clf.predict_proba(X_val)[:, 1] if hasattr(clf, "predict_proba") else None
         
         class_counts = pd.Series(y_full).value_counts().to_dict()
+        #st.text(class_counts)
         class_labels = {1:'iDose Users', 0:'Non iDose Users'}
         class_summary = ", ".join([f'{class_labels.get(cl, f"Class {cl}")} ({count})' for cl, count in class_counts.items()])
         
         if clf_type == 'Binary':
             metrics = {
                 "Accuracy": round(accuracy_score(y_val, y_pred), 4),
-                "Precision": round(precision_score(y_val, y_pred), 4),
-                "Recall": round(recall_score(y_val, y_pred), 4),
-                "F1 Score": round(f1_score(y_val, y_pred), 4),
-                "ROC AUC": round(roc_auc_score(y_val, y_proba), 4) if y_proba is not None else "N/A"
+                "Precision": round(precision_score(y_val, y_pred, average='weighted'), 4),
+                "Recall": round(recall_score(y_val, y_pred, average='weighted'), 4),
+                "F1 Score": round(f1_score(y_val, y_pred, average='weighted'), 4),
+                #"ROC AUC": round(roc_auc_score(y_val, y_proba, average='weighted', multi_class='ovr'), 4) if y_proba is not None else "N/A"
             }  
         elif clf_type == 'Regression':
             metrics = {
@@ -391,14 +393,14 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         X_full = X_full.astype(float)
         explainer = shap.TreeExplainer(clf, X_full, model_output='probability')
         shap_values = explainer(X_full)
-        shap_matrix = shap_values.values
+        shap_matrix = np.mean(np.abs(shap_values.values), axis=2)
         
         shap.summary_plot(shap_values, X_full, max_display=X_full.shape[1], show=False)
         shap_summary_filename = f'{os.getcwd()}\\images\\shap_summary_{mac}.png'
         plt.savefig(shap_summary_filename, bbox_inches='tight')
         plt.close()
             
-        shap_df = pd.DataFrame(shap_values.values, columns=X_full.columns)
+        shap_df = pd.DataFrame(shap_matrix, columns=X_full.columns)
         mean_shap = shap_df.abs().mean().sort_values(ascending=False)
         shap_importance = pd.Series(mean_shap, index=X_full.columns).sort_values(ascending=False)
         xgb_importance = pd.Series(clf.feature_importances_, index=X_full.columns).sort_values(ascending=False)
@@ -440,8 +442,9 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
             i = X_full.columns.get_loc(feature)
             shap_vals = shap_matrix[:, i]
             top_idx = np.argmax(np.abs(shap_vals))
+            #pred_class = np.argmax(clf.predict(X_full.iloc[[top_idx]]), axis=1)[0]
             
-            shap.plots.waterfall(shap_values[top_idx], show=False)
+            shap.plots.waterfall(shap_values[top_idx, :, 4], show=False)
             filename = f'{os.getcwd()}\\images\\shap_force_{feature}_{mac}.png'
             plt.savefig(filename, bbox_inches='tight')
             plt.close()
@@ -455,7 +458,7 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
         
         #### PARTIAL DEPENDENCE PLOT ###
         
-        temp_clf = GradientBoostingClassifier(**XGB_PARAMS)
+        temp_clf = RandomForestClassifier(**XGB_PARAMS)
         temp_clf.fit(X_full, y_full)
         new_import = pd.DataFrame({
             'Feature': X_full.columns, 
@@ -465,7 +468,7 @@ def generate_model_report(mac_dict, features, top_n_features=10, balance_class=F
 
         fig, axs = plt.subplots(3, 2, figsize=(15,15))
         
-        PartialDependenceDisplay.from_estimator(temp_clf, X_full, features=top_six, ax=axs, response_method='predict_proba', method='brute')
+        PartialDependenceDisplay.from_estimator(temp_clf, X_full, features=top_six, ax=axs, response_method='predict_proba', method='brute', target=4)
         plt.tight_layout()
         par_dep_path = f'{os.getcwd()}\\images\\partial_dependence_{mac}.png'
         plt.savefig(par_dep_path)
@@ -1029,7 +1032,10 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
     if cancel_button.button('Cancel', key='split_cancel', width='stretch', icon=':material/cancel:'):
         st.stop()
     
-    y = y > 0
+    #y = y > 0
+    class_labels = {'Non-iDose':0, 'Crawler':1, 'Walker':2, 'Runner':3, 'Superstar':4}
+    y = y.map(class_labels)
+    #st.text(y)
     
     mac_values = {}
     for mac in np.unique(X['MAC']): 
@@ -1042,15 +1048,15 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         df = mac_df.drop('MAC', axis=1)
         X_train, X_test, y_train, y_test = train_test_split(df, y_mac, test_size=0.2) 
         
-        if balance_class: 
-            if len(X_train) > 8:
-                X_train, y_train = balance_classes(X_train, y_train)
-                df, y_mac = balance_classes(df, y_mac)
+        # if balance_class: 
+        #     if len(X_train) > 8:
+        #         X_train, y_train = balance_classes(X_train, y_train)
+        #         df, y_mac = balance_classes(df, y_mac)
         
         # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
         #                             max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
         #                             device='cpu', n_jobs=-1, tree_method='hist')
-        clf = GradientBoostingClassifier(**XGB_PARAMS)
+        clf = RandomForestClassifier(**XGB_PARAMS)
         clf.fit(X_train, y_train)
         #st.text(clf.score(X_test, y_test))
         
@@ -1061,6 +1067,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
         mac_values[mac]['y_full'] = y_mac
         mac_values[mac]['type'] = 'Binary'
         
+        import random
         full_clf = clone(clf) 
         full_clf.fit(df, y_mac)
         clf_file_name = f'{model_name}_{mac}.pkl'
@@ -1069,7 +1076,7 @@ def run_model_mac_split(X, y, balance_class, progress_report, model_name, feat_s
             for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
-            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{random.randint(0,10000)}')
         
         shap = get_shap_explainer(clf, df)
         to_save = {
@@ -1109,21 +1116,24 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         if cancel_button.button('Cancel', key='mac_cancel', width='stretch', icon=':material/cancel:'):
             st.stop()
         
-        y = y > 0
+        #y = y > 0
+        class_labels = {'Non-iDose':0, 'Crawler':1, 'Walker':2, 'Runner':3, 'Superstar':4}
+        y = y.map(class_labels)
+        #st.text(y)
             
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2) 
         
-        if balance_class: 
-            if len(X_train) > 8:
-                X_train, y_train = balance_classes(X_train, y_train)
-                X, y = balance_classes(X, y)
+        # if balance_class: 
+        #     if len(X_train) > 8:
+        #         X_train, y_train = balance_classes(X_train, y_train)
+        #         X, y = balance_classes(X, y)
         
         
         # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
         #                         max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
         #                         device='cpu', n_jobs=-1, tree_method='hist')
         
-        clf = GradientBoostingClassifier(**XGB_PARAMS)
+        clf = RandomForestClassifier(**XGB_PARAMS)
         
         clf.fit(X_train, y_train)
         
@@ -1136,6 +1146,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
         mac_values['ALL_MACS']['y_full'] = y 
         mac_values['ALL_MACS']['type'] = 'Binary' 
         
+        import random
         full_clf = clone(clf) 
         full_clf.fit(X, y)
         clf_file_name = f'{model_name}_ALL_MACS.pkl'
@@ -1144,7 +1155,7 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
             for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
-            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{random.randint(0,100000)}')
             
         shap = get_shap_explainer(full_clf, X)
         to_save = {
@@ -1171,26 +1182,29 @@ def run_model_all_macs(X, y, balance_class, model_name, feat_settings):
 
 def train_model(X, y, balance_class, model_name, mac, feat_settings): 
     with st.spinner('Training Model...'): 
-        y = y > 0 
+        #y = y > 0 
+        class_labels = {'Non-iDose':0, 'Crawler':1, 'Walker':2, 'Runner':3, 'Superstar':4}
+        y = y.map(class_labels)
         
-        if balance_class: 
-            if len(X) > 8: 
-                X, y = balance_classes(X, y)
+        # if balance_class: 
+        #     if len(X) > 8: 
+        #         X, y = balance_classes(X, y)
         
         # clf = xgb.XGBClassifier(objective='binary:logistic', n_estimators=int(XGB_PARAMS['n_estimators']), subsample=float(XGB_PARAMS['subsample']),
         #                         max_depth=int(XGB_PARAMS['max_depth']), learning_rate=float(XGB_PARAMS['learning_rate']), enable_categorical=True,
         #                         device='cpu', n_jobs=-1, tree_method='hist')
-        clf = GradientBoostingClassifier(**XGB_PARAMS)
+        clf = RandomForestClassifier(**XGB_PARAMS)
         
         clf.fit(X, y)
         
+        import random
         clf_file_name = f'{model_name}_{mac}.pkl'
         if os.path.exists(clf_file_name) and st.session_state.get('saved_classifiers', []):
             num_extra = 1
             for _, clf_name, _, _ in st.session_state['saved_classifiers']: 
                 if f'{clf_file_name}_overwritten' in clf_name: 
                     num_extra += 1
-            os.rename(clf_file_name, f'{clf_file_name}_overwritten{num_extra}')
+            os.rename(clf_file_name, f'{clf_file_name}_overwritten{random.randint(0,100000)}')
         
         shap = get_shap_explainer(clf, X)
         to_save = {
