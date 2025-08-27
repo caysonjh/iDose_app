@@ -48,13 +48,17 @@ def load_and_prepare_data():
             
             
             train_list, cpt_codes, drug_list, idose_npis = update_info()
+            #st.text(idose_npis)
             train_list = [str(train) for train in train_list]
             #train_list = train_list[:50]
             
             progress_updater, progress_cleaner = make_progress_updater(len(train_list)*3)
             
             df1, cpt_missing = get_code_data_from_cms(train_list, cpt_codes, str(start_year), progress_updater, 0)
+            df1['NPI'] = df1['NPI'].astype(str)
+            idose_npis = [str(npi) for npi in idose_npis]
             idose_zips = df1[df1['NPI'].isin(idose_npis)][['NPI','ZIP']]
+            #st.dataframe(idose_zips)
             idose_zips.to_csv('idose_zips.csv')
             cpt_status = st.empty()
             cpt_status.success('Completed fetching CPT code data')

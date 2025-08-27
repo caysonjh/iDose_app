@@ -135,6 +135,7 @@ def shap_explainer(explainer, pred_data):
     pred_shap_images = {npi:None for npi in pred_data.index}
     top_features = {npi:None for npi in pred_data.index}
     top_vals = {npi:None for npi in pred_data.index}
+    #st.text(st.session_state.predict_model[3][2])
     for npi, npi_df in pred_data.iterrows():
         row_df = npi_df.to_frame().T
         shap_values = explainer(row_df)
@@ -239,8 +240,11 @@ def run_prediction():
         center_header(f'Selected Model: {st.session_state['predict_model'][0]}', 3)
         model_name = st.session_state['predict_model'][0]
         model = st.session_state['predict_model'][1]['model']
-        feat_settings = st.session_state['predict_model'][2]
+        feat_settings = st.session_state['predict_model'][1]['feat_settings']
+        #st.text(feat_settings)
+        #st.text(st.session_state['predict_model'][1]['feat_settings'])
         shap = st.session_state['predict_model'][3]
+        #st.text(st.session_state['predict_model'])
         pred_cols = st.columns([2,0.05,1.5,0.05,1.5])
         with pred_cols[0]: 
             center_header('Upload NPI list and get CMS data', 3)
@@ -394,15 +398,15 @@ def run_prediction():
                 #limes = {}
                 if explanation: 
                     shaps, shap_feats, shap_vals = shap_explainer(shap, run_data)
-                    if 'generated_df' in st.session_state and all(feat in st.session_state['generated_df'] for feat in run_data.columns): 
-                        all_data = st.session_state['generated_df'][all_data.columns.to_list()]                    
-                    else: 
-                        feat_means = feat_settings['feature_means']
-                        feat_stds = feat_settings['feature_stds']
-                        all_data = pd.DataFrame() 
-                        for feature in run_data.columns: 
-                            if feature in feat_means and feature in feat_stds: 
-                                all_data[feature] = np.random.normal(loc=feat_means[feature], scale=feat_stds[feature], size=200)
+                    # if 'generated_df' in st.session_state and all(feat in st.session_state['generated_df'] for feat in run_data.columns): 
+                    #     all_data = st.session_state['generated_df'][all_data.columns.to_list()]                    
+                    # else: 
+                    #     feat_means = feat_settings['feature_means']
+                    #     feat_stds = feat_settings['feature_stds']
+                    #     all_data = pd.DataFrame() 
+                    #     for feature in run_data.columns: 
+                    #         if feature in feat_means and feature in feat_stds: 
+                    #             all_data[feature] = np.random.normal(loc=feat_means[feature], scale=feat_stds[feature], size=200)
                     #limes = lime_explainer(model, run_data, all_data)            
                     
                 run_data['Prediction'] = ['iDose User' if pred == True else 'Non iDose User' for pred in predictions]
@@ -494,6 +498,7 @@ def run_prediction():
                             shaps[npi].seek(0)
                             st.image(shaps[npi])
                         with dfcol:
+                            #st.text(feat_settings)
                             shap_feat_mean_df = pd.DataFrame([feat_settings['feature_means']])[shap_feats[npi]]
                             shap_feat_std_df = pd.DataFrame([feat_settings['feature_stds']])[shap_feats[npi]]
                             differences = []

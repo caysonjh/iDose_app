@@ -256,8 +256,13 @@ def run_mac_split():
             run_data['MAC'] = df['MAC']
             y = df[st.session_state['idose_col_name']]
             
-            feat_settings['feature_means'] = run_data.drop('MAC',axis=1).mean().to_dict()
-            feat_settings['feature_stds'] = run_data.drop('MAC',axis=1).std().to_dict()
+            #feat_settings['feature_means'] = run_data.drop('MAC',axis=1).mean().to_dict()
+            #feat_settings['feature_stds'] = run_data.drop('MAC',axis=1).std().to_dict()
+            
+            mac_feats = {mac: feat_settings for mac in np.unique(run_data['MAC'])}
+            for mac in np.unique(run_data['MAC']): 
+                mac_feats[mac]['feature_means'] = run_data[run_data['MAC'] == mac].drop('MAC', axis=1).mean().to_dict()
+                mac_feats[mac]['feature_stds'] = run_data[run_data['MAC'] == mac].drop('MAC', axis=1).std().to_dict()
             
             st.text('Running model with this dataset...')   
             run_data_filtered = dataframe_explorer(run_data, case=False)
@@ -266,10 +271,7 @@ def run_mac_split():
             progress_reporter = make_progress_updater(len(np.unique(run_data['MAC'])))
             
             mac_clfs, pdf_report, web_info = run_model_mac_split(run_data, y, balance_classes, progress_reporter, model_name, feat_settings)
-            mac_clf_w_feats = [(mac_clf[0], mac_clf[1], {
-                'beneficiaries':beneficiaries, 'services':services, 'proportions':proportions, 'totals':totals, 'no_time':no_time, 
-                'balance_classes':balance_classes, 'selected_options':selected_options, 'ex_options':ex_options, 'use_mac':False, 'start_year':st.session_state.get('start_year', None)
-            }, mac_clfs[2]) for mac_clf in mac_clfs]
+            mac_clf_w_feats = [(mac_clf[0], mac_clf[1], mac_feats[mac_clf[0]], mac_clf[2]) for mac_clf in mac_clfs]
                         
             # total_dupes = 1
             if not st.session_state.get('saved_classifiers', []): 
