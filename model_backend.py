@@ -856,8 +856,11 @@ def get_code_data_from_cms(npi_list, cpt_codes, start_year=MOST_UP_TO_DATE_CMS_Y
         mac_df = pd.read_csv('state_to_mac.csv').set_index('State')['MAC'].to_dict()
         macs = []
         for state in df_final['State']: 
-            mac = mac_df[state]
-            macs.append(mac)
+            if state in mac_df: 
+                mac = mac_df[state]
+                macs.append(mac)
+            else: 
+                macs.append('Unknown')
         df_final['MAC'] = macs
     
     if start_year == MOST_UP_TO_DATE_CMS_YEAR:

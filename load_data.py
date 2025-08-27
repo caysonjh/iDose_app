@@ -48,6 +48,8 @@ def load_and_prepare_data():
             
             
             train_list, cpt_codes, drug_list, idose_npis = update_info()
+            train_list = [str(train) for train in train_list]
+            #train_list = train_list[:50]
             
             progress_updater, progress_cleaner = make_progress_updater(len(train_list)*3)
             
@@ -75,9 +77,17 @@ def load_and_prepare_data():
             progress_cleaner()
             train_list = [npi for npi in train_list if npi not in cms_missing and npi not in nppes_missing]
                 
+            df1['NPI'] = df1['NPI'].astype(str)
+            df2['NPI'] = df2['NPI'].astype(str)
             df_temp = pd.merge(df1, df2, on=['NPI'])
+            #st.dataframe(df_temp)
+            df_temp['NPI'] = df_temp['NPI'].astype(str)
+            df3['NPI'] = df3['NPI'].astype(str)
+            #st.dataframe(df3)
+            #st.dataframe(df_temp)
             all_data = pd.merge(df_temp, df3, on=['NPI'])
             all_data = all_data[all_data['NPI'].isin(train_list)]
+            #st.dataframe(all_data)
             
             is_idose = [True if npi in idose_npis else False for npi in all_data['NPI']]
             all_data[IDOS_VAL_COLUMN] = is_idose
@@ -90,7 +100,7 @@ def load_and_prepare_data():
             prep_data_text = st.empty()
             prep_data_text.text('Formatting Data...')
             all_data = format_cms_data(all_data, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'])
-            st.session_state.generated_df = all_data.set_index('NPI')
+            st.session_state.generated_df = all_data
             st.session_state.start_year = start_year
             prep_data_text.empty()
             cancel_button.empty()
