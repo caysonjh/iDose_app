@@ -17,8 +17,13 @@ from ydata_profiling import ProfileReport
 from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 def update_info():
-    idose_npis = pd.read_csv(IDOSE_FILE)['NPI'].to_list()
-    non_idose_npis = pd.read_csv(NON_IDOSE_FILE)['NPI'].to_list()
+    idose_npis = pd.read_csv('idose_vals.csv', dtype={'NPI':str})['NPI'].to_list()  
+    non_idose_npis = pd.read_csv(NON_IDOSE_FILE, dtype={'NPI':str})['NPI'].to_list()
+    #superstars = pd.read_csv('superstars.csv', dtype={'NPI':str})['NPI'].to_list() 
+    #runners = pd.read_csv('running.csv', dtype={'NPI':str})['NPI'].to_list() 
+    #walkers = pd.read_csv('walking.csv', dtype={'NPI':str})['NPI'].to_list() 
+    #crawlers = pd.read_csv('crawling.csv', dtype={'NPI':str})['NPI'].to_list() 
+    #idose_npis = superstars + runners + walkers + crawlers
 
     train_list = idose_npis + non_idose_npis
     all_codes = list(chain.from_iterable(new_feats.values()))
@@ -40,6 +45,11 @@ def load_and_prepare_data():
         if st.button('Generate/Regenerate Data', icon=':material/database_upload:', type='primary', width='stretch'):
             st.session_state['idose_col_name'] = IDOS_VAL_COLUMN
             st.session_state['generate_map'] = True
+            # st.session_state['my_map'] = None
+            # st.session_state['map_npis'] = None
+            # st.session_state['map_names'] = None
+            # st.session_state['map_zips'] = None
+            # st.session_state['map_dataset'] = None
             
             set_cancel_button()
             cancel_button = st.empty()
@@ -48,7 +58,14 @@ def load_and_prepare_data():
             
             
             train_list, cpt_codes, drug_list, idose_npis = update_info()
+            # st.text(len(train_list))
+            # st.text(len(idose_npis))
+            # st.text(len(crawling)+len(walking)+len(running)+len(superstars))
+            #t.text(train_list[:15])
             
+            #train_list = train_list[:10]
+            train_list = [str(train) for train in train_list]
+                        
             progress_updater, progress_cleaner = make_progress_updater(len(train_list)*3)
             
             df1, cpt_missing = get_code_data_from_cms(train_list, cpt_codes, str(start_year), progress_updater, 0)
@@ -76,11 +93,27 @@ def load_and_prepare_data():
             train_list = [npi for npi in train_list if npi not in cms_missing and npi not in nppes_missing]
                 
             df_temp = pd.merge(df1, df2, on=['NPI'])
+            df3['NPI'] = df3['NPI'].astype(str)
+            df_temp['NPI'] = df_temp['NPI'].astype(str)
+            #st.dataframe(df_temp)
+            #st.dataframe(df3)
             all_data = pd.merge(df_temp, df3, on=['NPI'])
             all_data = all_data[all_data['NPI'].isin(train_list)]
+            #st.dataframe(all_data)
             
-            is_idose = [True if npi in idose_npis else False for npi in all_data['NPI']]
-            all_data[IDOS_VAL_COLUMN] = is_idose
+            idose_vals = []
+            vals_df = pd.read_csv('idose_vals.csv')
+            for npi in all_data['NPI'].to_list(): 
+                if int(npi) in vals_df['NPI'].to_list(): 
+                    #st.text(vals_df['NPI'])
+                    #st.text(vals_df[vals_df['NPI'] == int(npi)])
+                    idose_vals.append(vals_df[vals_df['NPI'] == int(npi)]['num_idose'].iloc[0])
+                else: 
+                    idose_vals.append(0)
+            
+            print(idose_vals)
+                
+            all_data[IDOS_VAL_COLUMN] = idose_vals
             
             cpt_status.empty()
             drug_status.empty()
@@ -90,7 +123,8 @@ def load_and_prepare_data():
             prep_data_text = st.empty()
             prep_data_text.text('Formatting Data...')
             all_data = format_cms_data(all_data, start_year, MOST_UP_TO_DATE_CMS_YEAR, idose_zips['ZIP'])
-            st.session_state.generated_df = all_data.set_index('NPI')
+            #st.dataframe(all_data)
+            st.session_state.generated_df = all_data
             st.session_state.start_year = start_year
             prep_data_text.empty()
             cancel_button.empty()
@@ -200,6 +234,7 @@ def load_and_prepare_data():
     if check_data_loaded(): 
         with col1:
             st.success('Data is loaded and ready!')
+            #st.text(st.session_state.generated_df.dtypes)
             filtered_df = dataframe_explorer(st.session_state.generated_df, case=False)
             st.dataframe(filtered_df, use_container_width=True)
             
@@ -225,8 +260,9 @@ def load_and_prepare_data():
             if 'map_zips' not in st.session_state:
                 st.session_state['map_zips'] = info_df['Zip'].to_list()
             if 'map_dataset' not in st.session_state:
-                st.session_state['map_dataset'] = ['iDose Training Set' if st.session_state.generated_df.loc[npi][st.session_state.idose_col_name] else 'Non-iDose Training Set' for npi in st.session_state['map_npis']]
+                st.session_state['map_dataset'] = st.session_state.generated_df['is_idose']
                 
+            #st.text(st.session_state['map_zips'])
             if st.session_state['generate_map']==True or 'my_map' not in st.session_state: 
                 st.session_state['my_map'] = plot_map(st.session_state['map_npis'], st.session_state['map_names'], st.session_state['map_zips'], st.session_state['map_dataset'], show_train=True)
                 st.session_state['generate_map'] = False
